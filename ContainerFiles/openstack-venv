@@ -1,0 +1,23 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG PYTHON_VERSION=3.12
+ARG OS_RELEASE=bookworm
+FROM python:${PYTHON_VERSION}-${OS_RELEASE}
+RUN python3 -m venv /var/lib/openstack
+RUN /var/lib/openstack/bin/pip install --upgrade pip "setuptools>=80.9.0,<81"
+ENV PATH="/var/lib/openstack/bin:$PATH" \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete
+# Set the working directory
+WORKDIR /var/lib/openstack

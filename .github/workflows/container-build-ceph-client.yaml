@@ -1,0 +1,128 @@
+---
+name: Create and publish a ceph-client image
+
+permissions:
+  contents: read
+  pull-requests: write
+  packages: write
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/container-build-ceph.yaml
+      - ContainerFiles/ceph-client
+  schedule:
+    - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
+  workflow_dispatch:
+    inputs:
+      ceph-version:
+        description: 'Version of Ceph to use'
+        required: true
+        default: "v19.2.2"
+        type: choice
+        options:
+          - "v19.2.2"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/ceph-client
+  # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
+  #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
+  #                   workaround until there's a better way to handle this.
+  ceph_version: >
+    ["v19.2.2"]
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      ceph-version: ${{ steps.generate-matrix.outputs.ceph_version }}
+    steps:
+      - name: generate-matrix
+        id: generate-matrix
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
+            ceph_version="$(echo '${{ github.event.inputs.ceph-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
+          fi
+          echo "ceph_version=${ceph_version:-${{ env.ceph_version }}}" >> $GITHUB_OUTPUT
+  build-and-push-image:
+    needs:
+      - init
+    strategy:
+      matrix:
+        ceph-client-version: ${{ fromJSON(needs.init.outputs.ceph-version) }}
+    outputs:
+      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
+      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Dynamically set MY_DATE environment variable
+        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ContainerFiles/ceph-client
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.IMAGE_NAME }}:local
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CEPH_VERSION=${{ matrix.ceph-client-version }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:local'
+          output: trivy.txt
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+      - name: Publish Trivy Output to Summary
+        run: |
+          if [[ -s trivy.txt ]]; then
+            {
+              echo "### Security Output"
+              echo "<details><summary>Click to expand</summary>"
+              echo ""
+              echo '```terraform'
+              cat trivy.txt
+              echo '```'
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ContainerFiles/ceph-client
+          push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-client-version }}-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-client-version }}-${{ env.MY_DATE }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CEPH_VERSION=${{ matrix.ceph-client-version }}

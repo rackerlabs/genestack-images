@@ -1,0 +1,103 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/cloudnull/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG OS_VERSION=master
+ARG OS_CONSTRAINTS=master
+ARG RXT_VERSION=main
+ARG MOD_WSGI_VERSION=5.0.2
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             apache2 \
+                                             apache2-dev \
+                                             bash \
+                                             brotli \
+                                             build-essential \
+                                             cmake \
+                                             curl \
+                                             docutils-common \
+                                             gettext \
+                                             git \
+                                             libffi-dev \
+                                             libjs-sphinxdoc \
+                                             libjs-underscore \
+                                             libldap2-dev \
+                                             libpq-dev \
+                                             libsasl2-dev \
+                                             libssl-dev \
+                                             libsystemd-dev \
+                                             libxml2-dev \
+                                             libxslt1-dev \
+                                             libxslt1.1 \
+                                             ninja-build \
+                                             pkg-config \
+                                             ssl-cert \
+                                             xmlsec1
+RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+                                       git+https://opendev.org/openstack/keystone.git@${OS_VERSION}#egg=keystone \
+                                       git+https://github.com/cloudnull/keystone-rxt@${RXT_VERSION}#egg=keystone_rxt \
+                                       ldappool \
+                                       pyngus \
+                                       python-memcached
+
+COPY scripts/keystone-cve-patching.sh /opt/
+RUN bash /opt/keystone-cve-patching.sh
+
+# Build and install mod_wsgi
+WORKDIR /opt/mod_wsgi
+RUN wget https://codeload.github.com/GrahamDumpleton/mod_wsgi/tar.gz/${MOD_WSGI_VERSION} \
+  && tar xvfz ${MOD_WSGI_VERSION} \
+  && cd mod_wsgi-${MOD_WSGI_VERSION} \
+  && ./configure --with-python=/var/lib/openstack/bin/python3 \
+  && make \
+  && make install
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="keystone"
+LABEL org.opencontainers.image.description="OpenStack Service (Keystone) built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y apache2 \
+                                                libapache2-mod-shib \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -f /etc/apache2/sites-enabled/000-default.conf \
+  && rm -rf /var/www/html \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && mkdir -p /var/www/cgi-bin/keystone \
+  && . /etc/apache2/envvars \
+  && mkdir -p $APACHE_LOCK_DIR $APACHE_LOG_DIR $APACHE_RUN_DIR/socks \
+  && chown -R $APACHE_RUN_USER $APACHE_LOCK_DIR $APACHE_LOG_DIR $APACHE_RUN_DIR \
+  && echo "LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so" > /etc/apache2/mods-available/wsgi.load \
+  && ln -s /etc/apache2/mods-available/wsgi.load /etc/apache2/mods-enabled/wsgi.load \
+  && groupadd --system --gid 42424 keystone \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/keystone keystone \
+  && ln -s /var/lib/openstack/etc/keystone /etc/keystone \
+  && mkdir -p /etc/keystone/credential-keys \
+  && mkdir -p /etc/keystone/fernet-keys \
+  && chown keystone:keystone -h /etc/keystone \
+  && chown -R keystone:keystone /var/lib/openstack/etc/keystone
+# Copy the mod_wsgi module from the dependency build stage
+COPY --from=dependency_build /usr/lib/apache2/modules/mod_wsgi.so /usr/lib/apache2/modules/mod_wsgi.so
+# Set the environment variables for the keystone venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build
+USER 42424:42424
+# Set the entrypoint to the keystone-manage command
+ENTRYPOINT ["/var/lib/openstack/bin/keystone-manage"]

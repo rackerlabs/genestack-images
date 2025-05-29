@@ -1,0 +1,101 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/cloudnull/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CEPH_VERSION=main
+WORKDIR /opt
+RUN apt update \
+  && apt install -y ca-certificates lsb-release wget \
+  && wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+  && apt install -y ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+  && apt update \
+  && apt install --no-install-recommends -y \
+                                         build-essential \
+                                         cmake \
+                                         doxygen \
+                                         gperf \
+                                         jq \
+                                         libaio-dev \
+                                         libarrow-dev \
+                                         libbabeltrace-ctf-dev \
+                                         libbabeltrace-dev \
+                                         libblkid-dev \
+                                         libboost-all-dev \
+                                         libparquet-glib-dev \
+                                         libparquet-dev \
+                                         libc-ares-dev \
+                                         libcap-dev \
+                                         libcap-ng-dev \
+                                         libcrypto++-dev \
+                                         libcryptsetup-dev \
+                                         libcunit1-dev \
+                                         libcurl4-openssl-dev \
+                                         libdaxctl-dev \
+                                         libdqlite-dev \
+                                         libevent-dev \
+                                         libexpat1-dev \
+                                         libffi-dev \
+                                         libfmt-dev \
+                                         libfuse3-dev \
+                                         libgnutls28-dev \
+                                         libhwloc-dev \
+                                         libibverbs-dev \
+                                         libicu-dev \
+                                         libjemalloc-dev \
+                                         libkeyutils-dev \
+                                         libldap-dev \
+                                         libldap2-dev \
+                                         liblmdb-dev \
+                                         liblttng-ctl-dev \
+                                         liblttng-ust-dev \
+                                         liblua5.4-dev \
+                                         liblz4-dev \
+                                         libnbd-dev \
+                                         libncurses-dev \
+                                         libndctl-dev \
+                                         libnl-genl-3-dev \
+                                         libnss3-dev \
+                                         libnuma-dev \
+                                         liboath-dev \
+                                         libpmem-dev \
+                                         libpmemobj-dev \
+                                         libprotobuf-dev \
+                                         librabbitmq-dev \
+                                         librdkafka-dev \
+                                         librdmacm-dev \
+                                         libre2-dev \
+                                         libsctp-dev \
+                                         libsnappy-dev \
+                                         libsqlite3-dev \
+                                         libssl-dev \
+                                         libthrift-dev \
+                                         libtool \
+                                         libudev-dev \
+                                         libutf8proc-dev \
+                                         libxml2-dev \
+                                         libxmlsec1-dev \
+                                         libyaml-cpp-dev \
+                                         libzstd-dev \
+                                         nasm \
+                                         ninja-build \
+                                         nlohmann-json3-dev \
+                                         systemtap-sdt-dev \
+                                         uuid-dev \
+                                         xfslibs-dev \
+                                         zlib1g-dev
+WORKDIR /opt
+RUN git clone --recursive --branch ${CEPH_VERSION} https://github.com/ceph/ceph.git
+WORKDIR /opt/ceph
+RUN /var/lib/openstack/bin/pip install src/python-common cython sphinx --upgrade --force
+RUN . /var/lib/openstack/bin/activate \
+  && /opt/ceph/do_cmake.sh -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+                           -DWITH_MANPAGE=OFF \
+                           -DWITH_MGR_DASHBOARD_FRONTEND=OFF \
+                           -DWITH_CEPH_DEBUG_MUTEX=OFF
+
+
+WORKDIR /opt/ceph/build
+RUN ninja rbd rados
+# RUN /opt/ceph/make_debs.sh
