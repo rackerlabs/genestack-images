@@ -1,0 +1,70 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="keystone"
+LABEL org.opencontainers.image.description="OpenStack Service (Keystone) built for the enterprise."
+ARG MOD_WSGI_VERSION=5.0.2
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             apache2 \
+                                             apache2-dev \
+                                             bash \
+                                             build-essential \
+                                             cmake \
+                                             wget \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete
+WORKDIR /opt/mod_wsgi
+RUN wget --no-check-certificate https://codeload.github.com/GrahamDumpleton/mod_wsgi/tar.gz/${MOD_WSGI_VERSION} \
+  && tar xvfz ${MOD_WSGI_VERSION} \
+  && cd mod_wsgi-${MOD_WSGI_VERSION} \
+  && ./configure --with-python=/var/lib/openstack/bin/python3 \
+  && make \
+  && make install
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="Apache2 with mod_wsgi ${MOD_WSGI_VERSION}"
+LABEL org.opencontainers.image.description="Apache2 built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y apache2 \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -f /etc/apache2/sites-enabled/000-default.conf \
+  && rm -rf /var/www/html \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && . /etc/apache2/envvars \
+  && mkdir -p $APACHE_LOCK_DIR $APACHE_LOG_DIR $APACHE_RUN_DIR/socks \
+  && chown -R $APACHE_RUN_USER $APACHE_LOCK_DIR $APACHE_LOG_DIR $APACHE_RUN_DIR \
+  && echo "LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so" > /etc/apache2/mods-available/wsgi.load \
+  && ln -s /etc/apache2/mods-available/wsgi.load /etc/apache2/mods-enabled/wsgi.load
+# Copy the mod_wsgi module from the dependency build stage
+COPY --from=dependency_build /usr/lib/apache2/modules/mod_wsgi.so /usr/lib/apache2/modules/mod_wsgi.so
+# Set the environment variables for the keystone venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/www
+# Set the entrypoint to the keystone-manage command
+ENTRYPOINT ["/usr/sbin/apache2ctl"]

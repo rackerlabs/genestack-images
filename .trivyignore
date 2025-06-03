@@ -1,0 +1,24 @@
+# Keystone Vulnerability from 2012 - Fixed in 2012, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2012-5571
+
+# Glance Vulnerability from 2015 - Fixed in 2015, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2015-5251
+
+# Glance Vulnerability from 2015 - Fixed in 2015, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2015-5286
+
+# Keystone Vulnerability from 2012 - Fixed in 2012, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2012-4413
+
+# Keystone Vulnerability from 2012 - Fixed in 2012, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2012-3542

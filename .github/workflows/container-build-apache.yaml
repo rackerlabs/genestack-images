@@ -1,5 +1,5 @@
 ---
-name: Create and publish a openstack-venv image
+name: Create and publish a apache image
 
 permissions:
   actions: read
@@ -12,31 +12,64 @@ permissions:
 on:
   pull_request:
     paths:
-      - .github/workflows/container-build-openstack-venv.yaml
-      - ContainerFiles/openstack-venv
+      - .github/workflows/container-build-apache.yaml
+      - ContainerFiles/apache
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
+    inputs:
+      apache-mod-wsgi-version:
+        description: 'Version of Apache mod_wsgi to use'
+        required: true
+        default: "master"
+        type: choice
+        options:
+          - "master"
+          - "5.0.2"
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/openstack-venv
-  PYTHON_VERSION: 3.12
-  CATEGORY_NAME: openstack-venv
-
+  IMAGE_NAME: ${{ github.repository }}/apache
+  # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
+  #                  workflow_dispatch event, so they're being stored in the environment variables. This is a
+  #                  workaround until there's a better way to handle this.
+  mod_wsgi: >
+    ["5.0.2"]
 jobs:
-  build-and-push-image:
+  init:
+    runs-on: ubuntu-latest
     outputs:
-      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
-      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
+      apache-mod-wsgi-version: ${{ steps.generate-matrix.outputs.mod_wsgi }}
+    steps:
+      - name: generate-matrix
+        id: generate-matrix
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
+            mod_wsgi="$(echo '${{ github.event.inputs.apache-mod-wsgi-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
+          fi
+          echo "mod_wsgi=${mod_wsgi:-${{ env.mod_wsgi }}}" >> $GITHUB_OUTPUT
+  build-and-push-image:
+    needs:
+      - init
+    strategy:
+      matrix:
+        apache-mod-wsgi-version: ${{ fromJSON(needs.init.outputs.apache-mod-wsgi-version) }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Dynamically set MY_DATE environment variable
+        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Dynamically set environment variables
+        run: |
+          VERSION=$(echo -n "${{ matrix.apache-mod-wsgi-version }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
+          echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
+          NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
+          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -48,13 +81,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      - name: Dynamically set MY_DATE environment variable
-        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/openstack-venv
+          file: ContainerFiles/apache
           push: false
           load: true
           cache-from: type=gha
@@ -63,7 +94,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            MOD_WSGI_VERSION=${{ matrix.apache-mod-wsgi-version }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -78,7 +109,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-          category: "${{ env.CATEGORY_NAME }}-${{ env.PYTHON_VERSION }}"
+          category: "${{ env.CATEGORY_NAME }}"
       - name: Publish Trivy Output to Summary
         run: |
           if [[ -s trivy-results.sarif ]]; then
@@ -96,13 +127,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/openstack-venv
+          file: ContainerFiles/apache
           push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PYTHON_VERSION }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PYTHON_VERSION }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            MOD_WSGI_VERSION=${{ matrix.apache-mod-wsgi-version }}

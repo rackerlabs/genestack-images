@@ -6,15 +6,13 @@ ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
-ARG RXT_VERSION=main
-ARG MOD_WSGI_VERSION=5.0.2
+ARG OVN_PLUGIN_VERSION=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              bash \
                                              brotli \
                                              build-essential \
-                                             cmake \
                                              curl \
                                              docutils-common \
                                              gettext \
@@ -30,18 +28,23 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libxml2-dev \
                                              libxslt1-dev \
                                              libxslt1.1 \
-                                             ninja-build \
                                              pkg-config \
                                              ssl-cert \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/keystone.git@${OS_VERSION}#egg=keystone \
-                                       git+https://github.com/cloudnull/keystone-rxt@${RXT_VERSION}#egg=keystone_rxt \
-                                       ldappool \
-                                       pyngus \
-                                       python-memcached
-COPY scripts/keystone-cve-patching.sh /opt/
-RUN bash /opt/keystone-cve-patching.sh
+                                       git+https://opendev.org/openstack/octavia.git@${OS_VERSION}#egg=octavia \
+                                       git+https://github.com/openstack/ovn-octavia-provider@${OVN_PLUGIN_VERSION}#egg=ovn_octavia_provider \
+                                       PyMySQL \
+                                       etcd3gw \
+                                       kazoo \
+                                       python-memcached \
+                                       redis \
+                                       uwsgi \
+                                       zake
+
+COPY scripts/octavia-cve-patching.sh /opt/
+RUN bash /opt/octavia-cve-patching.sh
+
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
@@ -50,35 +53,34 @@ RUN find / -name '*.pyc' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
 
 
-FROM ghcr.io/rackerlabs/genestack-images/apache:latest
+FROM python:3.12-slim-bookworm
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
-LABEL org.opencontainers.image.name="keystone"
-LABEL org.opencontainers.image.description="OpenStack Service (Keystone) built for the enterprise."
+LABEL org.opencontainers.image.name="octavia"
+LABEL org.opencontainers.image.description="OpenStack Service (octavia) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libapache2-mod-shib \
+  && apt-get install --no-install-recommends -y libxml2 \
+                                                iptables-persistent \
+                                                netfilter-persistent \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
-  && mkdir -p /var/www/cgi-bin/keystone \
-  && groupadd --system --gid 42424 keystone \
-  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/keystone keystone \
-  && mkdir -p /var/lib/openstack/etc/keystone \
-  && ln -s /var/lib/openstack/etc/keystone /etc/keystone \
-  && mkdir -p /etc/keystone/credential-keys \
-  && mkdir -p /etc/keystone/fernet-keys \
-  && chown keystone:keystone -h /etc/keystone \
-  && chown -R keystone:keystone /var/lib/openstack/etc/keystone
-# Set the environment variables for the keystone venv
+  && groupadd --system --gid 42424 octavia \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/octavia octavia \
+  && mkdir -p /var/lib/openstack/etc/octavia \
+  && ln -s /var/lib/openstack/etc/octavia /etc/octavia \
+  && chown octavia:octavia -h /etc/octavia \
+  && chown -R octavia:octavia /var/lib/openstack/etc/octavia
+# Set the environment variables for the octavia venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
 USER 42424:42424
-# Set the entrypoint to the keystone-manage command
-ENTRYPOINT ["/var/lib/openstack/bin/keystone-manage"]
+# Set the entrypoint to the octavia-manage command
+ENTRYPOINT ["/var/lib/openstack/bin/octavia-manage"]

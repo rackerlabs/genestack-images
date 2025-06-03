@@ -1,16 +1,19 @@
 ---
-name: Create and publish a ceph-client image
+name: Create and publish a ceph-libs image
 
 permissions:
+  actions: read
   contents: read
-  pull-requests: write
+  id-token: write
   packages: write
+  pull-requests: write
+  security-events: write
 
 on:
   pull_request:
     paths:
       - .github/workflows/container-build-ceph.yaml
-      - ContainerFiles/ceph-client
+      - ContainerFiles/ceph-libs
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
@@ -25,7 +28,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/ceph-client
+  IMAGE_NAME: ${{ github.repository }}/ceph-libs
+  CATEGORY_NAME: ceph-libs
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
@@ -50,15 +54,25 @@ jobs:
       - init
     strategy:
       matrix:
-        ceph-client-version: ${{ fromJSON(needs.init.outputs.ceph-version) }}
+        ceph-libs-version: ${{ fromJSON(needs.init.outputs.ceph-version) }}
     outputs:
       MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
       MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
+      - name: Cleanup disk space
+        run: |
+          echo "Before Cleanup"; df -h
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/local/share/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile || true
+          sudo rm -rf "/usr/local/share/boost" || true
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
+          echo "After Cleanup"; df -h
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Set up QEMU
@@ -82,7 +96,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/ceph-client
+          file: ContainerFiles/ceph-libs
           push: false
           load: true
           cache-from: type=gha
@@ -91,23 +105,31 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CEPH_VERSION=${{ matrix.ceph-client-version }}
+            CEPH_VERSION=${{ matrix.ceph-libs-version }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: '${{ env.IMAGE_NAME }}:local'
-          output: trivy.txt
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        continue-on-error: true
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: "${{ env.IMAGE_NAME }}-${{ matrix.ceph-libs-version }}"
       - name: Publish Trivy Output to Summary
         run: |
-          if [[ -s trivy.txt ]]; then
+          if [[ -s trivy-results.sarif ]]; then
             {
               echo "### Security Output"
               echo "<details><summary>Click to expand</summary>"
               echo ""
-              echo '```terraform'
-              cat trivy.txt
+              echo '```json'
+              cat trivy-results.sarif
               echo '```'
               echo "</details>"
             } >> $GITHUB_STEP_SUMMARY
@@ -116,13 +138,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/ceph-client
+          file: ContainerFiles/ceph-libs
           push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-client-version }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-client-version }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-libs-version }}-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-libs-version }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CEPH_VERSION=${{ matrix.ceph-client-version }}
+            CEPH_VERSION=${{ matrix.ceph-libs-version }}

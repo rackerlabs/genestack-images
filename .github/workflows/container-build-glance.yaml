@@ -2,9 +2,12 @@
 name: Create and publish a Glance image
 
 permissions:
+  actions: read
   contents: read
-  pull-requests: write
+  id-token: write
   packages: write
+  pull-requests: write
+  security-events: write
 
 on:
   pull_request:
@@ -38,7 +41,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["master", "stable/2024.1", "stable/2025.1"]
+    ["stable/2024.1", "stable/2025.1"]
 
 jobs:
   init:
@@ -60,9 +63,6 @@ jobs:
       matrix:
         openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,6 +76,8 @@ jobs:
         run: |
           VERSION=$(echo -n "${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
+          NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
+          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -106,18 +108,26 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: '${{ env.IMAGE_NAME }}:local'
-          output: trivy.txt
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        continue-on-error: true
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: "${{ env.CATEGORY_NAME }}"
       - name: Publish Trivy Output to Summary
         run: |
-          if [[ -s trivy.txt ]]; then
+          if [[ -s trivy-results.sarif ]]; then
             {
               echo "### Security Output"
               echo "<details><summary>Click to expand</summary>"
               echo ""
-              echo '```terraform'
-              cat trivy.txt
+              echo '```json'
+              cat trivy-results.sarif
               echo '```'
               echo "</details>"
             } >> $GITHUB_STEP_SUMMARY

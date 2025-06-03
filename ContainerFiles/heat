@@ -3,10 +3,11 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 ARG VENV_TAG=3.12-latest
-FROM ghcr.io/cloudnull/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
-RUN apt-get update && apt-get upgrade -y \
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              bash \
                                              brotli \
@@ -52,7 +53,8 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="heat"
 LABEL org.opencontainers.image.description="OpenStack Service (heat) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-RUN apt-get update && apt-get upgrade -y \
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y libxml2 \
                                                 libxslt1.1 \
                                                 libopenmpi3 \
@@ -64,9 +66,8 @@ RUN apt-get update && apt-get upgrade -y \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 heat \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/heat heat \
+  && mkdir -p /var/lib/openstack/etc/heat \
   && ln -s /var/lib/openstack/etc/heat /etc/heat \
-  && mkdir -p /etc/heat/credential-keys \
-  && mkdir -p /etc/heat/fernet-keys \
   && chown heat:heat -h /etc/heat \
   && chown -R heat:heat /var/lib/openstack/etc/heat
 # Set the environment variables for the heat venv

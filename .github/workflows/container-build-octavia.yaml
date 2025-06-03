@@ -1,5 +1,5 @@
 ---
-name: Create and publish a Heat image
+name: Create and publish a octavia image
 
 permissions:
   actions: read
@@ -12,9 +12,9 @@ permissions:
 on:
   pull_request:
     paths:
-      - .github/workflows/container-build-heat.yaml
-      - ContainerFiles/heat
-      - scripts/heat-cve-patching.sh
+      - .github/workflows/container-build-octavia.yaml
+      - ContainerFiles/octavia
+      - scripts/octavia-cve-patching.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
@@ -28,20 +28,30 @@ on:
           - master
           - stable/2024.1
           - stable/2025.1
+      ovnPluginTag:
+        description: 'Set OVN plugin version'
+        required: true
+        default: 'master'
+        type: choice
+        options:
+          - master
+          - "8.0.0"
       project-version:
-        description: 'Version of OpenStack Heat to build, defaults to openstack-constraints if unspecified'
+        description: 'Version of OpenStack octavia to build, defaults to openstack-constraints if unspecified'
         required: false
         type: string
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/heat
+  IMAGE_NAME: ${{ github.repository }}/octavia
   project_version: ${{ github.event.inputs.project-version }}
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
     ["stable/2024.1", "stable/2025.1"]
+  ovnPluginTag: >
+    ["8.0.0"]
 
 jobs:
   init:
@@ -93,7 +103,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/heat
+          file: ContainerFiles/octavia
           push: false
           load: true
           cache-from: type=gha
@@ -104,6 +114,7 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            OVN_PLUGIN_VERSION=${{ github.event.inputs.ovnPluginTag }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -136,7 +147,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/heat
+          file: ContainerFiles/octavia
           push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -147,3 +158,4 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            OVN_PLUGIN_VERSION=${{ github.event.inputs.ovnPluginTag }}

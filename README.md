@@ -28,7 +28,7 @@ This repository contains GitHub Actions workflows and Containerfiles for buildin
 
 - **Shibd** - Shibboleth Service Provider daemon
 - **OpenStack Venv** - Base image for OpenStack services with Python 3.12
-- **Ceph** - Shibboleth Service Provider daemon
+- **Apache** - Apache HTTP server with mod_wsgi
 
 ## Container Images
 
@@ -210,17 +210,43 @@ The OpenStack Venv container provides OpenStack's a runtime environment:
 
 ```bash
 docker run -d \
-  --name ceph-client \
+  --name ceph-libs \
   --build-arg CEPH_VERSION=main \
-  ghcr.io/rackspace/genestack-images/ceph-client:master-latest
+  ghcr.io/rackspace/genestack-images/ceph-libs:master-latest
 ```
 
 #### Building Python Ceph Clients
 
 ```bash
 docker build \
-  -f ContainerFiles/ceph-client \
-  -t ceph-client:local .
+  -f ContainerFiles/ceph-libs \
+  -t ceph-libs:local .
+```
+
+### Apache
+
+The OpenStack Venv container provides OpenStack's a runtime environment:
+
+**Features:**
+
+- Python 3.12 runtime
+- Debian Bookworm base
+
+#### Running Apache Clients
+
+```bash
+docker run -d \
+  --name ceph-libs \
+  ghcr.io/rackspace/genestack-images/apache:latest
+```
+
+#### Building Apache Clients
+
+```bash
+docker build \
+  -f ContainerFiles/apache \
+  --build-arg MOD_WSGI_VERSION=master \
+  -t apache:local .
 ```
 
 ## Automation Workflows

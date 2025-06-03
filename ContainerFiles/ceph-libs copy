@@ -1,0 +1,31 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CEPH_VERSION=main
+WORKDIR /opt
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt update \
+  && apt install -y ca-certificates lsb-release wget \
+  && wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+  && apt install -y ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+  && apt update \
+  && apt install --no-install-recommends -y \
+                                         build-essential \
+                                         cmake \
+                                         doxygen \
+                                         gperf \
+                                         jq default-jdk dh-exec dh-python flex golang javahelper junit4 libcunit1-dev libfmt-dev bison \
+                                         cpio debhelper libfuse-dev libgoogle-perftools-dev liblua5.3-dev libnss3-dev libre2-dev libutf8proc-dev \
+                                         libyaml-cpp-dev nlohmann-json3-dev systemd uuid-runtime valgrind xfslibs-dev libaio-dev \
+                                         libbabeltrace-ctf-dev libbabeltrace-dev libcryptsetup-dev libcap-ng-dev libcap-dev libibverbs-dev \
+                                         librdmacm-dev libkeyutils-dev libldap2-dev liblttng-ust-dev liblz4-dev liboath-dev libsnappy-dev \
+                                         liblmdb-dev libudev-dev libnl-genl-3-dev librabbitmq-dev librdkafka-dev libthrift-dev ninja-build
+RUN git clone --recursive --branch ${CEPH_VERSION} https://github.com/ceph/ceph.git
+WORKDIR /opt/ceph
+
+RUN /var/lib/openstack/bin/pip install /opt/ceph/src/python-common cython
+RUN sed -i 's/NAME=.*/NAME=debian/g' /etc/os-release
+RUN . /var/lib/openstack/bin/activate && /opt/ceph/make_debs.sh

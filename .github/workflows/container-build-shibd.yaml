@@ -2,9 +2,12 @@
 name: Create and publish a Shib image
 
 permissions:
+  actions: read
   contents: read
-  pull-requests: write
+  id-token: write
   packages: write
+  pull-requests: write
+  security-events: write
 
 on:
   pull_request:
@@ -18,6 +21,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/shibd
+  CATEGORY_NAME: shibd
 
 jobs:
   build-and-push-image:
@@ -25,9 +29,6 @@ jobs:
       MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
       MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,18 +65,26 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: '${{ env.IMAGE_NAME }}:local'
-          output: trivy.txt
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        continue-on-error: true
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: "${{ env.IMAGE_NAME }}"
       - name: Publish Trivy Output to Summary
         run: |
-          if [[ -s trivy.txt ]]; then
+          if [[ -s trivy-results.sarif ]]; then
             {
               echo "### Security Output"
               echo "<details><summary>Click to expand</summary>"
               echo ""
-              echo '```terraform'
-              cat trivy.txt
+              echo '```json'
+              cat trivy-results.sarif
               echo '```'
               echo "</details>"
             } >> $GITHUB_STEP_SUMMARY

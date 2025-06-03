@@ -3,10 +3,11 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 ARG VENV_TAG=3.12-latest
-FROM ghcr.io/cloudnull/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CEPH_VERSION=main
 WORKDIR /opt
-RUN apt update \
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt update \
   && apt install -y ca-certificates lsb-release wget \
   && wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
   && apt install -y ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
@@ -98,4 +99,4 @@ RUN . /var/lib/openstack/bin/activate \
 
 WORKDIR /opt/ceph/build
 RUN ninja rbd rados
-# RUN /opt/ceph/make_debs.sh
+RUN /opt/ceph/make_debs.sh
