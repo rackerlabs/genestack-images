@@ -58,20 +58,24 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
+      ovnPluginTag: ${{ steps.generate-matrix.outputs.ovnPluginTag }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             openstack_constraints="$(echo '${{ github.event.inputs.openstack-constraints }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            ovnPluginTag="$(echo '${{ github.event.inputs.ovnPluginTag }}' | jq -R '[select(length>0)]' | jq -c '.')"
           fi
           echo "openstack_constraints=${openstack_constraints:-${{ env.openstack_constraints }}}" >> $GITHUB_OUTPUT
+          echo "ovnPluginTag=${ovnPluginTag:-${{ env.ovnPluginTag }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
         openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
+        ovnPluginTag: ${{ fromJSON(needs.init.outputs.ovnPluginTag)}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -114,7 +118,7 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
-            OVN_PLUGIN_VERSION=${{ github.event.inputs.ovnPluginTag }}
+            OVN_PLUGIN_VERSION=${{ matrix.ovnPluginTag }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -158,4 +162,4 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
-            OVN_PLUGIN_VERSION=${{ github.event.inputs.ovnPluginTag }}
+            OVN_PLUGIN_VERSION=${{ matrix.ovnPluginTag }}
