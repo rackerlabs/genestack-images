@@ -63,8 +63,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 ipset \
                                                 iptables \
                                                 iputils-arping \
-                                                net-tools \
                                                 keepalived \
+                                                net-tools \
+                                                openvswitch-common \
+                                                openvswitch-switch \
                                                 radvd \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
