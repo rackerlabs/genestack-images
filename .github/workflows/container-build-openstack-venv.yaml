@@ -66,6 +66,7 @@ jobs:
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         with:
           image-ref: '${{ env.IMAGE_NAME }}:local'
           format: 'sarif'
@@ -78,18 +79,30 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-          category: "${{ env.CATEGORY_NAME }}-${{ env.PYTHON_VERSION }}"
-      - name: Publish Trivy Output to Summary
+          category: "${{ env.CATEGORY_NAME }}"
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:local'
+          output: trivy.txt
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+      - name: Create trivy output file in markdown format
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
-          if [[ -s trivy-results.sarif ]]; then
+          if [[ -s trivy.txt ]]; then
+              echo "### Security Output" > trivy-output.txt
+              echo '```terraform' >> trivy-output.txt
+              cat trivy.txt >> trivy-output.txt
+              echo '```' >> trivy-output.txt
+          fi
+      - name: Publish Trivy Output to Summary
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ -s trivy-output.txt ]]; then
             {
-              echo "### Security Output"
-              echo "<details><summary>Click to expand</summary>"
-              echo ""
-              echo '```json'
-              cat trivy-results.sarif
-              echo '```'
-              echo "</details>"
+              cat trivy-output.txt
             } >> $GITHUB_STEP_SUMMARY
           fi
       - name: Build and push Docker image
