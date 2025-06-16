@@ -19,14 +19,19 @@ on:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
     inputs:
-      ovs-version:
-        description: 'Version of OVS to use'
+      openstack-constraints:
+        description: 'Version of OpenStack Constraints to use'
         required: true
         default: "master"
         type: choice
         options:
           - master
-          - v3.5.1
+          - stable/2024.1
+          - stable/2025.1
+      project-version:
+        description: 'Version of OpenStack Neutroon to build, defaults to openstack-constraints if unspecified'
+        required: false
+        type: string
 
 env:
   REGISTRY: ghcr.io
