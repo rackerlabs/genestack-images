@@ -23,6 +23,7 @@ This repository contains GitHub Actions workflows and Containerfiles for buildin
 - **Keystone** - OpenStack Identity Service
 - **Glance** - OpenStack Image Service
 - **Heat** - OpenStack Orchestration Service
+- **Neutron** - OpenStack Orchestration Service
 
 ### Supporting Services
 
@@ -142,6 +143,41 @@ docker build \
   --build-arg OS_CONSTRAINTS=master \
   -f ContainerFiles/heat \
   -t heat:local .
+```
+
+### Neutron
+
+The Neutron container provides OpenStack's image service:
+
+**Features:**
+
+- Built to ensure compatibility with OVN
+- uWSGI application server
+- CVE patching for security compliance
+
+**Build Arguments:**
+
+- `OS_VERSION` - OpenStack version (default: master)
+- `OS_CONSTRAINTS` - OpenStack constraints version
+
+#### Running Neutron
+
+```bash
+docker run -d \
+  --name neutron \
+  -p 9292:9292 \
+  -v /etc/neutron:/etc/neutron \
+  ghcr.io/rackspace/genestack-images/neutron:master-latest
+```
+
+#### Building Neutron
+
+```bash
+docker build \
+  --build-arg OS_VERSION=master \
+  --build-arg OS_CONSTRAINTS=master \
+  -f ContainerFiles/neutron \
+  -t neutron:local .
 ```
 
 ### Shibd
@@ -291,6 +327,7 @@ The build process includes automatic patching for known CVEs
 - **Keystone**: Patches applied via `scripts/keystone-cve-patching.sh`
 - **Glance**: Patches applied via `scripts/glance-cve-patching.sh`
 - **Heat**: Patches applied via `scripts/heat-cve-patching.sh`
+- **Neutron**: Patches applied via `scripts/neutron-cve-patching.sh`
 
 ### Vulnerability Scanning
 

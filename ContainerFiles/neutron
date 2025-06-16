@@ -1,0 +1,88 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG OS_VERSION=master
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             bash \
+                                             brotli \
+                                             build-essential \
+                                             curl \
+                                             docutils-common \
+                                             gettext \
+                                             git \
+                                             libffi-dev \
+                                             libjs-sphinxdoc \
+                                             libjs-underscore \
+                                             libldap2-dev \
+                                             libpq-dev \
+                                             libsasl2-dev \
+                                             libssl-dev \
+                                             libsystemd-dev \
+                                             libxml2-dev \
+                                             libxslt1-dev \
+                                             libxslt1.1 \
+                                             pkg-config \
+                                             ssl-cert \
+                                             xmlsec1
+RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+                                       git+https://opendev.org/openstack/ovn-bgp-agent@${OS_VERSION}#egg=ovn-bgp-agent \
+                                       git+https://opendev.org/openstack/neutron.git@${OS_VERSION}#egg=neutron \
+                                       git+https://opendev.org/openstack/neutron-dynamic-routing@${OS_VERSION}#egg=neutron-dynamic-routing \
+                                       git+https://opendev.org/openstack/neutron-fwaas@${OS_VERSION}#egg=neutron-fwaas \
+                                       git+https://opendev.org/openstack/neutron-vpnaas@${OS_VERSION}#egg=neutron-vpnaas \
+                                       PyMySQL
+
+COPY scripts/neutron-cve-patching.sh /opt/
+RUN bash /opt/neutron-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="neutron"
+LABEL org.opencontainers.image.description="OpenStack Service (neutron) built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y conntrack \
+                                                dnsmasq-utils \
+                                                ebtables \
+                                                ipset \
+                                                iptables \
+                                                iputils-arping \
+                                                net-tools \
+                                                keepalived \
+                                                radvd \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 neutron \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/neutron neutron \
+  && mkdir -p /var/lib/openstack/etc/neutron \
+  && ln -s /var/lib/openstack/etc/neutron /etc/neutron \
+  && chown neutron:neutron -h /etc/neutron \
+  && chown -R neutron:neutron /var/lib/openstack/etc/neutron
+# Set the environment variables for the neutron venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build
+USER 42424:42424
+# Set the entrypoint to the neutron-manage command
+ENTRYPOINT ["/var/lib/openstack/bin/neutron-manage"]
