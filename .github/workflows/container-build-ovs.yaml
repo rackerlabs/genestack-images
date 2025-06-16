@@ -1,5 +1,5 @@
 ---
-name: Create and publish a Neutron image
+name: Create and publish a ovs image
 
 permissions:
   actions: read
@@ -12,51 +12,48 @@ permissions:
 on:
   pull_request:
     paths:
-      - .github/workflows/container-build-neutron.yaml
-      - ContainerFiles/neutron
-      - scripts/neutron-cve-patching.sh
+      - .github/workflows/container-build-ovs.yaml
+      - ContainerFiles/ovs
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
     inputs:
       ovs-version:
-        description: 'Version of OVS to use'
+        description: 'Version of ovs to use'
         required: true
-        default: "master"
+        default: "main"
         type: choice
         options:
-          - master
-          - v3.5.1
+          - "main"
+          - "v3.5.1"
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/neutron
-  project_version: ${{ github.event.inputs.project-version }}
+  IMAGE_NAME: ${{ github.repository }}/ovs
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
-  #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
-  #                   workaround until there's a better way to handle this.
-  openstack_constraints: >
-    ["stable/2024.1", "stable/2025.1"]
-
+  #                  workflow_dispatch event, so they're being stored in the environment variables. This is a
+  #                  workaround until there's a better way to handle this.
+  ovs_release: >
+    ["v3.5.1"]
 jobs:
   init:
     runs-on: ubuntu-latest
     outputs:
-      openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
+      ovs-version: ${{ steps.generate-matrix.outputs.ovs_release }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
-            openstack_constraints="$(echo '${{ github.event.inputs.openstack-constraints }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            ovs_release="$(echo '${{ github.event.inputs.ovs-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
           fi
-          echo "openstack_constraints=${openstack_constraints:-${{ env.openstack_constraints }}}" >> $GITHUB_OUTPUT
+          echo "ovs_release=${ovs_release:-${{ env.ovs_release }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
-        openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
+        ovs-version: ${{ fromJSON(needs.init.outputs.ovs-version) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -67,9 +64,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Dynamically set MY_DATE environment variable
         run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
-      - name: Dynamically set OS_VERSION_PARSE environment variable
+      - name: Dynamically set environment variables
         run: |
-          VERSION=$(echo -n "${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
+          VERSION=$(echo -n "${{ matrix.ovs-version }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
@@ -88,7 +85,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/neutron
+          file: ContainerFiles/ovs
           push: false
           load: true
           cache-from: type=gha
@@ -97,8 +94,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
-            OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            OVS_VERSION=${{ matrix.ovs-version }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -144,14 +140,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/neutron
+          file: ContainerFiles/ovs
           push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
-            OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            OVS_VERSION=${{ matrix.ovs-version }}

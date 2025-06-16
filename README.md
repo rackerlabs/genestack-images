@@ -30,6 +30,7 @@ This repository contains GitHub Actions workflows and Containerfiles for buildin
 - **Shibd** - Shibboleth Service Provider daemon
 - **OpenStack Venv** - Base image for OpenStack services with Python 3.12
 - **Apache** - Apache HTTP server with mod_wsgi
+- **OVS** - OVS - built within the OpenStack Venv container
 
 ## Container Images
 
@@ -283,6 +284,31 @@ docker build \
   -f ContainerFiles/apache \
   --build-arg MOD_WSGI_VERSION=master \
   -t apache:local .
+```
+
+### OVS
+
+OpenVSwitch Service Provider container:
+
+**Features:**
+
+- Minimal footprint for security
+
+#### Running OVS
+
+```bash
+docker run -d \
+  --name ovs \
+  ghcr.io/rackspace/genestack-images/ovs:latest
+```
+
+#### Building OVS
+
+```bash
+docker build \
+  -f ContainerFiles/ovs \
+  --build-arg OVS_VERSION=master \
+  -t ovs:local .
 ```
 
 ## Automation Workflows

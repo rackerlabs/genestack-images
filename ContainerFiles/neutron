@@ -2,13 +2,14 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG VENV_TAG=v3.5.1-latest
+FROM ghcr.io/rackerlabs/genestack-images/ovs:${VENV_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
+                                             dh-autoreconf \
                                              bash \
                                              brotli \
                                              build-essential \
@@ -36,7 +37,9 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        git+https://opendev.org/openstack/neutron-dynamic-routing@${OS_VERSION}#egg=neutron-dynamic-routing \
                                        git+https://opendev.org/openstack/neutron-fwaas@${OS_VERSION}#egg=neutron-fwaas \
                                        git+https://opendev.org/openstack/neutron-vpnaas@${OS_VERSION}#egg=neutron-vpnaas \
-                                       PyMySQL
+                                       PyMySQL \
+                                       graphviz \
+                                       netaddr
 
 COPY scripts/neutron-cve-patching.sh /opt/
 RUN bash /opt/neutron-cve-patching.sh
@@ -55,6 +58,9 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="neutron"
 LABEL org.opencontainers.image.description="OpenStack Service (neutron) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+COPY --from=dependency_build /usr/local /usr/local
+COPY --from=dependency_build /etc/openvswitch /etc/openvswitch
+COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y conntrack \
@@ -64,9 +70,16 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 iptables \
                                                 iputils-arping \
                                                 keepalived \
+                                                libatomic1 \
+                                                libbpf1 \
+                                                libcap-ng0 \
+                                                libnuma1 \
+                                                libssl3 \
+                                                libunbound8 \
+                                                libunwind8 \
+                                                libxdp1 \
                                                 net-tools \
-                                                openvswitch-common \
-                                                openvswitch-switch \
+                                                openssl \
                                                 radvd \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
