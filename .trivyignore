@@ -22,3 +22,8 @@ CVE-2012-4413
 # NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
 #                  The vulnerability is being reported due to the version scheme change OpenStack did.
 CVE-2012-3542
+
+# Neutron Vulnerability from 2014 - Fixed in 2015, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2015-3221
