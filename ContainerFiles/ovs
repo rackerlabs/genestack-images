@@ -1,0 +1,51 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG OVS_VERSION=main
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             dh-autoreconf \
+                                             bash \
+                                             brotli \
+                                             build-essential \
+                                             curl \
+                                             docutils-common \
+                                             gettext \
+                                             git \
+                                             libffi-dev \
+                                             libjs-sphinxdoc \
+                                             libjs-underscore \
+                                             libldap2-dev \
+                                             libpq-dev \
+                                             libsasl2-dev \
+                                             libssl-dev \
+                                             libsystemd-dev \
+                                             libxml2-dev \
+                                             libxslt1-dev \
+                                             libxslt1.1 \
+                                             pkg-config \
+                                             ssl-cert \
+                                             xmlsec1 \
+                                             libcap-ng-dev \
+                                             libbpf-dev \
+                                             libxdp-dev \
+                                             libnuma-dev
+RUN git clone --branch ${OVS_VERSION} https://github.com/openvswitch/ovs /opt/ovs
+WORKDIR /opt/ovs
+RUN ./boot.sh
+RUN ./configure --sysconfdir=/etc --localstatedir=/var
+RUN PROC="$([ nproc > 4 ] && echo 4 || nproc)" make -j $PROC && make install
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="ovs"
+LABEL org.opencontainers.image.description="OVS built for the enterprise."
+COPY --from=dependency_build /usr/local /usr/local
+COPY --from=dependency_build /etc/openvswitch /etc/openvswitch
+COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
+ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"
