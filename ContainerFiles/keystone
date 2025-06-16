@@ -36,10 +36,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/keystone.git@${OS_VERSION}#egg=keystone \
-                                       git+https://github.com/cloudnull/keystone-rxt@${RXT_VERSION}#egg=keystone_rxt \
+                                       git+https://github.com/rackerlabs/keystone-rxt@${RXT_VERSION}#egg=keystone_rxt \
                                        ldappool \
                                        pyngus \
-                                       python-memcached
+                                       python-memcached \
+                                       PyMySQL
 COPY scripts/keystone-cve-patching.sh /opt/
 RUN bash /opt/keystone-cve-patching.sh
 RUN find / -name '*.pyc' -delete \
