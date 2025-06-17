@@ -2,8 +2,8 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=v3.5.1-latest
-FROM ghcr.io/rackerlabs/genestack-images/ovs:${VENV_TAG} AS dependency_build
+ARG BUILT_TAG=v3.5.1-latest
+FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
