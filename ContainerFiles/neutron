@@ -82,6 +82,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 libxdp1 \
                                                 net-tools \
                                                 openssl \
+                                                procps \
                                                 radvd \
                                                 sudo \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
