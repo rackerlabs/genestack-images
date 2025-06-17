@@ -64,8 +64,10 @@ COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y conntrack \
+                                                dnsmasq-base \
                                                 dnsmasq-utils \
                                                 ebtables \
+                                                haproxy \
                                                 ipset \
                                                 iptables \
                                                 iputils-arping \
