@@ -64,8 +64,10 @@ COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y conntrack \
+                                                dnsmasq-base \
                                                 dnsmasq-utils \
                                                 ebtables \
+                                                haproxy \
                                                 ipset \
                                                 iptables \
                                                 iputils-arping \
@@ -81,6 +83,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 net-tools \
                                                 openssl \
                                                 radvd \
+                                                sudo \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
