@@ -48,4 +48,5 @@ LABEL org.opencontainers.image.description="OVS built for the enterprise."
 COPY --from=dependency_build /usr/local /usr/local
 COPY --from=dependency_build /etc/openvswitch /etc/openvswitch
 COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"
