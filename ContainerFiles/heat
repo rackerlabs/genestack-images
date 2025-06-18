@@ -55,7 +55,8 @@ LABEL org.opencontainers.image.description="OpenStack Service (heat) built for t
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y curl \
+                                                libxml2 \
                                                 libxslt1.1 \
                                                 libopenmpi3 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
