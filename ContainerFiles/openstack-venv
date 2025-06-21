@@ -5,6 +5,7 @@
 ARG PYTHON_VERSION=3.12
 ARG OS_RELEASE=bookworm
 FROM python:${PYTHON_VERSION}-${OS_RELEASE}
+ARG CACHEBUST=0
 RUN python3 -m venv /var/lib/openstack
 RUN /var/lib/openstack/bin/pip install --upgrade pip "setuptools>=80.9.0,<81"
 ENV PATH="/var/lib/openstack/bin:$PATH" \
