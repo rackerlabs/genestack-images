@@ -3,7 +3,7 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 FROM debian:trixie-slim
-
+ARG CACHEBUST=0
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="shibd"

@@ -95,6 +95,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             MOD_WSGI_VERSION=${{ matrix.apache-mod-wsgi-version }}
+            CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -150,3 +151,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             MOD_WSGI_VERSION=${{ matrix.apache-mod-wsgi-version }}
+            CACHEBUST=${{ github.sha }}

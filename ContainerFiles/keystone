@@ -4,6 +4,7 @@
 
 ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG RXT_VERSION=main
