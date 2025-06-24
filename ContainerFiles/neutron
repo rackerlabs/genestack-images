@@ -6,6 +6,7 @@ ARG BUILT_TAG=v3.5.1-latest
 FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+ARG RXT_VERSION=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -33,7 +34,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/ovn-bgp-agent@${OS_VERSION}#egg=ovn-bgp-agent \
-                                       git+https://opendev.org/openstack/neutron.git@${OS_VERSION}#egg=neutron \
+                                       git+https://github.com/rackerlabs/neutron.git@${RXT_VERSION}#egg=neutron \
                                        git+https://opendev.org/openstack/neutron-dynamic-routing@${OS_VERSION}#egg=neutron-dynamic-routing \
                                        git+https://opendev.org/openstack/neutron-fwaas@${OS_VERSION}#egg=neutron-fwaas \
                                        git+https://opendev.org/openstack/neutron-vpnaas@${OS_VERSION}#egg=neutron-vpnaas \
