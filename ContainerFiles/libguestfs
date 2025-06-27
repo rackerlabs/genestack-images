@@ -1,0 +1,170 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG GUESTFS_VERSION=master
+ARG GUESTFS_HIVEX_VERSION=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y apt-utils \
+                                                bash \
+                                                brotli \
+                                                build-essential \
+                                                cpio \
+                                                cpio \
+                                                curl \
+                                                darcs \
+                                                dh-autoreconf \
+                                                docutils-common \
+                                                gettext \
+                                                git \
+                                                gperf \
+                                                libacl1-dev \
+                                                libacl1-dev \
+                                                libaugeas-dev \
+                                                libbpf-dev \
+                                                libcap-dev \
+                                                libcap-dev \
+                                                libcap-ng-dev \
+                                                libconfig-dev \
+                                                libconfig-dev \
+                                                libffi-dev \
+                                                libfuse-dev \
+                                                libhivex-dev \
+                                                libjs-sphinxdoc \
+                                                libjs-underscore \
+                                                libjson-c-dev \
+                                                libldap2-dev \
+                                                libnuma-dev \
+                                                libpq-dev \
+                                                libsasl2-dev \
+                                                libssl-dev \
+                                                libsystemd-dev \
+                                                libtsk-dev \
+                                                libtsk-dev \
+                                                libvirt-dev \
+                                                libxdp-dev \
+                                                libxml2-dev \
+                                                libxslt1-dev \
+                                                libxslt1.1 \
+                                                libyara-dev \
+                                                libyara-dev \
+                                                opam \
+                                                pkg-config \
+                                                qemu-block-extra \
+                                                qemu-block-extra \
+                                                qemu-system \
+                                                qemu-utils \
+                                                qemu-utils \
+                                                rsync \
+                                                ssl-cert \
+                                                supermin \
+                                                supermin \
+                                                xmlsec1 \
+                                                xorriso \
+                                                zstd
+RUN opam init --yes --disable-sandboxing
+RUN opam install --update-invariant --yes oasis augeas ocamlfind
+ENV PATH=/root/.opam/default/bin:$PATH
+ENV OCAMLPATH=/root/.opam/default/lib/ocaml:/usr/lib/ocaml
+ENV PYTHON=/var/lib/openstack/bin/python3
+
+RUN git clone --branch ${GUESTFS_HIVEX_VERSION} https://github.com/libguestfs/hivex /opt/hivex
+WORKDIR /opt/hivex
+RUN git submodule update --init --recursive
+RUN autoreconf -i
+RUN ./generator/generator.ml && ./configure
+RUN make && make install
+
+RUN git clone --branch ${GUESTFS_VERSION} https://github.com/libguestfs/libguestfs /opt/libguestfs
+WORKDIR /opt/libguestfs
+RUN git submodule update --init --recursive
+RUN autoreconf -i
+RUN ./configure --disable-erlang \
+                --disable-gobject \
+                --disable-golang \
+                --disable-haskell \
+                --disable-lua \
+                --disable-ocaml \
+                --disable-perl \
+                --disable-php \
+                --disable-ruby \
+                CFLAGS=-fPIC
+RUN PROC="$([ nproc > 4 ] && echo 4 || nproc)" make -j $PROC
+RUN make INSTALLDIRS=vendor REALLY_INSTALL=yes install
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="libguestfs"
+LABEL org.opencontainers.image.description="LibGuestFS built for the enterprise."
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y acl \
+                                                attr \
+                                                binutils \
+                                                bsdextrautils \
+                                                btrfs-progs \
+                                                bzip2 \
+                                                cpio \
+                                                cryptsetup-bin \
+                                                curl \
+                                                dash \
+                                                db-util \
+                                                db-util \
+                                                diffutils \
+                                                dosfstools \
+                                                e2fsprogs \
+                                                exfatprogs \
+                                                extlinux \
+                                                f2fs-tools \
+                                                fdisk \
+                                                file \
+                                                gawk \
+                                                gdisk \
+                                                grub2-common \
+                                                icoutils \
+                                                icoutils \
+                                                iproute2 \
+                                                isc-dhcp-client \
+                                                kmod \
+                                                kpartx \
+                                                ldmtool \
+                                                less \
+                                                libacl1 \
+                                                libxml2 \
+                                                lsscsi \
+                                                lvm2 \
+                                                lzop \
+                                                mdadm \
+                                                mount \
+                                                mtools \
+                                                netpbm \
+                                                ntfs-3g \
+                                                osinfo-db \
+                                                qemu-block-extra \
+                                                qemu-system \
+                                                qemu-system-x86 \
+                                                qemu-utils \
+                                                sleuthkit \
+                                                squashfs-tools \
+                                                supermin \
+                                                syslinux \
+                                                udev \
+                                                util-linux \
+                                                uuid-runtime \
+                                                xz-utils \
+                                                zerofree \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete
+COPY --from=dependency_build /usr/local /usr/local
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"
