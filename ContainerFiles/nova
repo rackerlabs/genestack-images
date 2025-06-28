@@ -39,7 +39,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
                                        PyMySQL \
                                        python-memcached \
-                                       pygobject
+                                       websockify
 
 COPY scripts/nova-cve-patching.sh /opt/
 RUN bash /opt/nova-cve-patching.sh
@@ -52,15 +52,12 @@ RUN find / -name '*.pyc' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
 
 
-FROM python:3.12-slim-bookworm
+FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG}
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="nova"
 LABEL org.opencontainers.image.description="OpenStack Service (nova) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-COPY --from=dependency_build /usr/local /usr/local
-COPY --from=dependency_build /etc/openvswitch /etc/openvswitch
-COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y dosfstools \
@@ -69,6 +66,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 gir1.2-libosinfo-1.0 \
                                                 iptables \
                                                 kpartx \
+                                                ksmtuned \
                                                 libgirepository-1.0-1 \
                                                 libguestfs0 \
                                                 libosinfo-bin \
