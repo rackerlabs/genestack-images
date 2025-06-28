@@ -41,7 +41,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        PyMySQL \
                                        graphviz \
                                        netaddr \
-                                       python-memcached
+                                       python-memcached \
+                                       uwsgi
 
 COPY scripts/neutron-cve-patching.sh /opt/
 RUN bash /opt/neutron-cve-patching.sh
