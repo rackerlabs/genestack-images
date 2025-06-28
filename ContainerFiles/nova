@@ -47,8 +47,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        uwsgi
 
 RUN git clone --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
-WORKDIR /usr/share/novnc
-RUN ln -s vnc_lite.html vnc_auto.html
+RUN rm -rf /usr/share/novnc/.git
+RUN cp -v /usr/share/novnc/vnc_lite.html /usr/share/novnc/vnc_auto.html
 
 COPY scripts/nova-cve-patching.sh /opt/
 RUN bash /opt/nova-cve-patching.sh
