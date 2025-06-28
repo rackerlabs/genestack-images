@@ -38,6 +38,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
                                        PyMySQL \
+                                       libvirt-python \
                                        python-memcached \
                                        websockify \
                                        uwsgi
