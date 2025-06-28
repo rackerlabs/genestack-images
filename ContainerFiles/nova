@@ -46,7 +46,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        websockify \
                                        uwsgi
 
-RUN git clone --filter=blob:none --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
+RUN git clone --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
 
 COPY scripts/nova-cve-patching.sh /opt/
 RUN bash /opt/nova-cve-patching.sh
