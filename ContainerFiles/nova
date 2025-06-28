@@ -39,7 +39,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
                                        PyMySQL \
                                        python-memcached \
-                                       websockify
+                                       websockify \
+                                       uwsgi
 
 COPY scripts/nova-cve-patching.sh /opt/
 RUN bash /opt/nova-cve-patching.sh
