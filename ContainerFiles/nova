@@ -29,6 +29,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libssl-dev \
                                              libsystemd-dev \
                                              libxml2-dev \
+                                             libvirt-dev \
                                              libxslt1-dev \
                                              libxslt1.1 \
                                              pkg-config \
