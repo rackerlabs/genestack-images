@@ -6,6 +6,7 @@ ARG BUILT_TAG=v1.56.1-latest
 FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+ARG NOVNC_VERSION=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -45,6 +46,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        websockify \
                                        uwsgi
 
+RUN git clone --filter=blob:none --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
+
 COPY scripts/nova-cve-patching.sh /opt/
 RUN bash /opt/nova-cve-patching.sh
 
@@ -62,6 +65,7 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="nova"
 LABEL org.opencontainers.image.description="OpenStack Service (nova) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+COPY --from=dependency_build /usr/share/novnc /usr/share/novnc
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y dosfstools \
@@ -87,6 +91,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /etc/ssh/ssh_host_*_key \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \

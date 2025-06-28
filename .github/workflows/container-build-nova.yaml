@@ -28,6 +28,14 @@ on:
           - master
           - stable/2024.1
           - stable/2025.1
+      novnc-version:
+        description: 'Version of novnc to use'
+        required: true
+        default: " v1.6.0"
+        type: choice
+        options:
+          - "master"
+          - "v1.6.0"
       project-version:
         description: 'Version of OpenStack nova to build, defaults to openstack-constraints if unspecified'
         required: false
@@ -42,26 +50,32 @@ env:
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
     ["stable/2024.1", "stable/2025.1"]
+  novnc_version: >
+    ["v1.6.0"]
 
 jobs:
   init:
     runs-on: ubuntu-latest
     outputs:
       openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
+      novnc-version: ${{ steps.generate-matrix.outputs.novnc_version }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             openstack_constraints="$(echo '${{ github.event.inputs.openstack-constraints }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            novnc_version="$(echo '${{ github.event.inputs.novnc-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
           fi
           echo "openstack_constraints=${openstack_constraints:-${{ env.openstack_constraints }}}" >> $GITHUB_OUTPUT
+          echo "novnc_version=${novnc_version:-${{ env.novnc_version }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
         openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
+        novnc-version: ${{ fromJSON(needs.init.outputs.novnc-version) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -104,6 +118,7 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            NOVNC_VERSION=${{ matrix.novnc-version }}
             CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
@@ -161,4 +176,5 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            NOVNC_VERSION=${{ matrix.novnc-version }}
             CACHEBUST=${{ github.sha }}
