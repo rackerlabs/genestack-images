@@ -18,7 +18,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              gettext \
                                              git \
                                              libffi-dev \
-                                             libopenmpi-dev \
                                              libjs-sphinxdoc \
                                              libjs-underscore \
                                              libldap2-dev \
@@ -33,13 +32,13 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/heat.git@${OS_VERSION}#egg=openstack-heat \
+                                       git+https://opendev.org/openstack/placement.git@${OS_VERSION}#egg=openstack-placement \
                                        PyMySQL \
                                        python-memcached \
                                        uwsgi
 
-COPY scripts/heat-cve-patching.sh /opt/
-RUN bash /opt/heat-cve-patching.sh
+COPY scripts/placement-cve-patching.sh /opt/
+RUN bash /opt/placement-cve-patching.sh
 
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
@@ -52,32 +51,29 @@ RUN find / -name '*.pyc' -delete \
 FROM python:3.12-slim-bookworm
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
-LABEL org.opencontainers.image.name="heat"
-LABEL org.opencontainers.image.description="OpenStack Service (heat) built for the enterprise."
+LABEL org.opencontainers.image.name="placement"
+LABEL org.opencontainers.image.description="OpenStack Service (placement) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y curl \
-                                                libxml2 \
-                                                libxslt1.1 \
-                                                libopenmpi3 \
+  && apt-get install --no-install-recommends -y libxml2 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
-  && groupadd --system --gid 42424 heat \
-  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/heat heat \
-  && mkdir -p /var/lib/openstack/etc/heat \
-  && ln -s /var/lib/openstack/etc/heat /etc/heat \
-  && chown heat:heat -h /etc/heat \
-  && chown -R heat:heat /var/lib/openstack/etc/heat
-# Set the environment variables for the heat venv
+  && groupadd --system --gid 42424 placement \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/placement placement \
+  && mkdir -p /var/lib/openstack/etc/placement \
+  && ln -s /var/lib/openstack/etc/placement /etc/placement \
+  && chown placement:placement -h /etc/placement \
+  && chown -R placement:placement /var/lib/openstack/etc/placement
+# Set the environment variables for the placement venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
 USER 42424:42424
-# Set the entrypoint to the heat-manage command
-ENTRYPOINT ["/var/lib/openstack/bin/heat-manage"]
+# Set the entrypoint to the placement-manage command
+ENTRYPOINT ["/var/lib/openstack/bin/placement-manage"]
