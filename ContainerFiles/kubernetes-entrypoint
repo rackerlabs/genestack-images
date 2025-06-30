@@ -10,6 +10,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              build-essential
 RUN git clone https://github.com/airshipit/kubernetes-entrypoint /opt/kubernetes-entrypoint
 WORKDIR /opt/kubernetes-entrypoint
+COPY scripts/kubernetes-entrypoint-cve-patching.sh /opt/
+RUN bash /opt/kubernetes-entrypoint-cve-patching.sh
 SHELL [ "/bin/bash", "-cex" ]
 ENV GO111MODULE=on
 RUN make get-modules
