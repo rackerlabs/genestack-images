@@ -1,0 +1,36 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG BUILT_TAG=v3.5.1-latest
+FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
+ARG CACHEBUST=0
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="libvirt"
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             cgroup-tools \
+                                             dmidecode \
+                                             ebtables \
+                                             iproute2 \
+                                             ipxe-qemu \
+                                             kmod \
+                                             libvirt-clients \
+                                             libvirt-daemon-system \
+                                             openssh-client \
+                                             ovmf \
+                                             pm-utils \
+                                             qemu-block-extra \
+                                             qemu-efi \
+                                             qemu-efi-arm \
+                                             qemu-system \
+                                             qemu-utils \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && groupadd --system --gid 42424 nova \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/nova nova \
+  && mkdir -p /etc/nova /var/log/nova /var/cache/nova \
+  && chown nova:nova /etc/nova /var/log/nova /var/lib/nova /var/cache/nova \
+  && usermod -a -G kvm nova
