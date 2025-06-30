@@ -49,17 +49,12 @@ COPY --from=dependency_build /usr/local /usr/local
 COPY --from=dependency_build /etc/openvswitch /etc/openvswitch
 COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y \
-                                             libbpf1 \
-                                             libcap-ng0 \
-                                             libffi8 \
-                                             libnuma1 \
-                                             libssl3 \
-                                             libxdp1 \
-                                             libxslt1.1 \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libbpf* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libcap-ng* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libcrypto* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libelf* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libnuma* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libssl* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libxdp* /lib/x86_64-linux-gnu/
+COPY --from=dependency_build /lib/x86_64-linux-gnu/libz* /lib/x86_64-linux-gnu/
 ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"
