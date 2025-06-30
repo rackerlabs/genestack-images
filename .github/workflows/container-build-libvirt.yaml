@@ -21,7 +21,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/libvirt
-  PYTHON_VERSION: 3.12
   CATEGORY_NAME: libvirt
 
 jobs:
@@ -63,7 +62,6 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
             CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
@@ -115,9 +113,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PYTHON_VERSION }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PYTHON_VERSION }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
             CACHEBUST=${{ github.sha }}
