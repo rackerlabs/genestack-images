@@ -99,5 +99,23 @@ RUN . /var/lib/openstack/bin/activate \
 
 
 WORKDIR /opt/ceph/build
-RUN ninja rbd rados
-RUN /opt/ceph/make_debs.sh
+RUN ninja rbd rados cephfs
+RUN ninja install
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="ceph-libs"
+LABEL org.opencontainers.image.description="Ceph client libraries built for the enterprise."
+COPY --from=dependency_build /usr/local /usr/local
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete
+ENV PATH="/usr/local/bin:/usr/local/sbin:/var/lib/openstack/bin:$PATH"
+WORKDIR /var/lib/openstack
