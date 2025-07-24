@@ -24,6 +24,7 @@ This repository contains GitHub Actions workflows and Containerfiles for buildin
 - **Glance** - OpenStack Image Service
 - **Heat** - OpenStack Orchestration Service
 - **Neutron** - OpenStack Orchestration Service
+- **Masakari** - OpenStack Instance HA Service
 
 ### Supporting Services
 
@@ -179,6 +180,40 @@ docker build \
   --build-arg OS_CONSTRAINTS=master \
   -f ContainerFiles/neutron \
   -t neutron:local .
+```
+
+### Masakari
+
+The Masakari container provides OpenStack's instance high availability service:
+
+**Features:**
+
+- uWSGI application server
+- CVE patching for security compliance
+
+**Build Arguments:**
+
+- `OS_VERSION` - OpenStack version (default: master)
+- `OS_CONSTRAINTS` - OpenStack constraints version
+
+#### Running Masakari
+
+```bash
+docker run -d \
+  --name masakari \
+  -p 15868:15868 \
+  -v /etc/masakari:/etc/masakari \
+  ghcr.io/rackspace/genestack-images/masakari:master-latest
+```
+
+#### Building Masakari
+
+```bash
+docker build \
+  --build-arg OS_VERSION=master \
+  --build-arg OS_CONSTRAINTS=master \
+  -f ContainerFiles/masakari \
+  -t masakari:local .
 ```
 
 ### Shibd
@@ -354,6 +389,7 @@ The build process includes automatic patching for known CVEs
 - **Glance**: Patches applied via `scripts/glance-cve-patching.sh`
 - **Heat**: Patches applied via `scripts/heat-cve-patching.sh`
 - **Neutron**: Patches applied via `scripts/neutron-cve-patching.sh`
+- **Masakari**: Patches applied via `scripts/masakari-cve-patching.sh`
 
 ### Vulnerability Scanning
 
