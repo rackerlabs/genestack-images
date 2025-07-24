@@ -38,3 +38,8 @@ CVE-2015-0259
 CVE-2015-3241
 CVE-2015-3280
 CVE-2015-7713
+
+# Cinder Vulnerability from 2014, no impact on current environment
+# NOTE(Cloudnull): This is a false positive, the vulnerability is not present in the current environment.
+#                  The vulnerability is being reported due to the version scheme change OpenStack did.
+CVE-2014-3641
