@@ -102,7 +102,7 @@ WORKDIR /opt/ceph/build
 RUN ninja rbd rados cephfs
 RUN ninja install
 
-FROM python:3.12-slim-bookworm
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:3.12-latest
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="ceph-libs"
