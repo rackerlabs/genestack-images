@@ -24,11 +24,8 @@ This repository contains GitHub Actions workflows and Containerfiles for buildin
 - **Glance** - OpenStack Image Service
 - **Heat** - OpenStack Orchestration Service
 - **Neutron** - OpenStack Orchestration Service
-<<<<<<< HEAD
 - **Masakari** - OpenStack Instance HA Service
-=======
 - **Cinder** - OpenStack Block Storage Service
->>>>>>> 6683479 (feat: Add Cinder container)
 
 ### Supporting Services
 
