@@ -24,7 +24,11 @@ This repository contains GitHub Actions workflows and Containerfiles for buildin
 - **Glance** - OpenStack Image Service
 - **Heat** - OpenStack Orchestration Service
 - **Neutron** - OpenStack Orchestration Service
+<<<<<<< HEAD
 - **Masakari** - OpenStack Instance HA Service
+=======
+- **Cinder** - OpenStack Block Storage Service
+>>>>>>> 6683479 (feat: Add Cinder container)
 
 ### Supporting Services
 
@@ -180,6 +184,30 @@ docker build \
   --build-arg OS_CONSTRAINTS=master \
   -f ContainerFiles/neutron \
   -t neutron:local .
+```
+
+### Cinder
+
+The Cinder container provides OpenStack's block storage service:
+
+#### Running Cinder
+
+```bash
+docker run -d \
+  --name cinder \
+  -p 8776:8776 \
+  -v /etc/cinder:/etc/cinder \
+  ghcr.io/rackspace/genestack-images/cinder:master-latest
+```
+
+#### Building Cinder
+
+```bash
+docker build \
+  --build-arg OS_VERSION=master \
+  --build-arg OS_CONSTRAINTS=master \
+  -f ContainerFiles/cinder \
+  -t cinder:local .
 ```
 
 ### Masakari
