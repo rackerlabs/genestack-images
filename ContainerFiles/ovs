@@ -57,4 +57,13 @@ COPY --from=dependency_build /lib/x86_64-linux-gnu/libnuma* /lib/x86_64-linux-gn
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libssl* /lib/x86_64-linux-gnu/
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libxdp* /lib/x86_64-linux-gnu/
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libz* /lib/x86_64-linux-gnu/
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /etc/ssh/ssh_host_*_key \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete
 ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"
