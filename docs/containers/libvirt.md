@@ -21,4 +21,4 @@ graph LR
 
 ## Dependencies
 
-- Based on [Ovs](ovs.md)
+- Builds From [OpenStack Virtual Environment](openstack-venv.md)

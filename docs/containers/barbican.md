@@ -17,3 +17,7 @@ graph LR
     ``` docker
     --8<-- "ContainerFiles/barbican"
     ```
+
+## Dependencies
+
+- Builds From [OpenStack Virtual Environment](openstack-venv.md)

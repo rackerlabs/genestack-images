@@ -17,3 +17,8 @@ graph LR
     ``` docker
     --8<-- "ContainerFiles/placement"
     ```
+
+## Dependencies
+
+- Builds From [OpenStack Virtual Environment](openstack-venv.md)
+- Based on [Upstream Debian Slim](https://hub.docker.com/_/debian/tags?name=slim)

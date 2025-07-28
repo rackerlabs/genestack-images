@@ -21,4 +21,4 @@ graph LR
 
 ## Dependencies
 
-- Used by [Libvirt](libvirt.md), [Neutron](neutron.md)
+- Builds From [OpenStack Virtual Environment](openstack-venv.md)
