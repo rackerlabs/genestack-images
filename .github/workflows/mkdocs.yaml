@@ -1,5 +1,10 @@
 name: pages build and deployment
 
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+
 on:
   push:
     branches:
