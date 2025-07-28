@@ -1,0 +1,147 @@
+---
+site_name: Genestack Images
+site_description: >-
+  Documentation for the Genestack container images and CVE handling.
+
+site_url: https://cloudnull.github.io/genestack-images
+
+theme:
+  name: material
+  logo: assets/images/rackspace_logo-white.svg
+  favicon: assets/images/pngegg.png
+  icon:
+    logo: logo
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/link
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: red
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: rxt
+      primary: black
+      accent: red
+      toggle:
+        icon: material/toggle-switch-off
+        name: Switch to system preference
+
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+  features:
+    - announce.dismiss
+    - header.autohide
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.instant.preview
+    - navigation.prune
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
+copyright: Copyright &copy; 2024 RACKSPACE TECHNOLOGY
+
+extra:
+  social:
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/rackspace
+      name: Rackspace on LinkedIn
+    - icon: fontawesome/brands/x-twitter
+      link: https://twitter.com/rackspace
+      name: Rackspace on X
+    - icon: fontawesome/brands/github
+      link: https://github.com/rackerlabs
+      name: Rackspace on github
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/2mN5yZvV3a
+      name: Rackspace on Discord
+    - icon: fontawesome/solid/blog
+      link: https://blog.rackspacecloud.com/
+
+extra_css:
+  - overrides/stylesheets/adr.css
+  - overrides/stylesheets/admonition.css
+
+plugins:
+  - search
+  - swagger-ui-tag
+  - mkdocs-material-adr/adr
+  - glightbox
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: python
+          class: python
+          validator: !!python/name:markdown_exec.validator
+          format: !!python/name:markdown_exec.formatter
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      restrict_base_path: false
+
+repo_name: rackerlabs/genestack-images
+repo_url: https://github.com/rackerlabs/genestack-images
+dev_addr: "127.0.0.1:8001"
+edit_uri: "edit/main/docs"
+nav:
+  - Home: index.md
+  - Containers Images:
+      - Apache: containers/apache.md
+      - Barbican: containers/barbican.md
+      - Ceph Libs: containers/ceph-libs.md
+      - Cinder: containers/cinder.md
+      - Glance: containers/glance.md
+      - Heat: containers/heat.md
+      - Keystone: containers/keystone.md
+      - Kubernetes Entrypoint: containers/kubernetes-entrypoint.md
+      - Libguestfs: containers/libguestfs.md
+      - Libvirt: containers/libvirt.md
+      - Magnum: containers/magnum.md
+      - Masakari: containers/masakari.md
+      - Neutron: containers/neutron.md
+      - Nova: containers/nova.md
+      - Octavia: containers/octavia.md
+      - Openstack Venv: containers/openstack-venv.md
+      - OVS: containers/ovs.md
+      - Placement: containers/placement.md
+      - Shibd: containers/shibd.md
