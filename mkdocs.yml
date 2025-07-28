@@ -129,6 +129,7 @@ nav:
       - Apache: containers/apache.md
       - Barbican: containers/barbican.md
       - Ceph Libs: containers/ceph-libs.md
+      - Designate: containers/designate.md
       - Cinder: containers/cinder.md
       - Glance: containers/glance.md
       - Heat: containers/heat.md
