@@ -21,4 +21,4 @@ graph LR
 
 ## Dependencies
 
-- Used by [Ceph Libs](ceph-libs.md), [Cinder](cinder.md)
+- Builds From [Upstream Python](https://hub.docker.com/_/python)

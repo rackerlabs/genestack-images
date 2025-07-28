@@ -17,3 +17,7 @@ graph LR
     ``` docker
     --8<-- "ContainerFiles/shibd"
     ```
+
+## Dependencies
+
+- Builds From [Upstream Debian](https://hub.docker.com/_/debian)

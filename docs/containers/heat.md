@@ -17,3 +17,6 @@ graph LR
     ``` docker
     --8<-- "ContainerFiles/heat"
     ```
+## Dependencies
+
+- Builds From [OpenStack Virtual Environment](openstack-venv.md)

@@ -21,4 +21,4 @@ graph LR
 
 ## Dependencies
 
-- Used by [Keystone](keystone.md)
+- Builds From [OpenStack Virtual Environment](openstack-venv.md)
