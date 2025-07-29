@@ -133,6 +133,8 @@ nav:
       - Cinder: containers/cinder.md
       - Glance: containers/glance.md
       - Heat: containers/heat.md
+      - Ironic API: containers/ironic-api.md
+      - Ironic Inspector: containers/ironic-inspector.md
       - Keystone: containers/keystone.md
       - Kubernetes Entrypoint: containers/kubernetes-entrypoint.md
       - Libguestfs: containers/libguestfs.md

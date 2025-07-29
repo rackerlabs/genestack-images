@@ -1,0 +1,80 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
+ARG OS_VERSION=master
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             bash \
+                                             brotli \
+                                             build-essential \
+                                             curl \
+                                             docutils-common \
+                                             gettext \
+                                             git \
+                                             libffi-dev \
+                                             libjs-sphinxdoc \
+                                             libjs-underscore \
+                                             libldap2-dev \
+                                             libpq-dev \
+                                             libsasl2-dev \
+                                             libssl-dev \
+                                             libsystemd-dev \
+                                             libxml2-dev \
+                                             libxslt1-dev \
+                                             libxslt1.1 \
+                                             pkg-config \
+                                             ssl-cert \
+                                             xmlsec1
+RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+                                       git+https://opendev.org/openstack/ironic-inspector.git@${OS_VERSION}#egg=ironic-inspector \
+                                       PyMySQL \
+                                       python-memcached \
+                                       uwsgi
+
+COPY scripts/ironic-cve-patching.sh /opt/
+RUN bash /opt/ironic-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
+  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python3.12/site-packages/PyJWT-*.dist-info/METADATA
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="ironic-inspector"
+LABEL org.opencontainers.image.description="OpenStack Service (ironic-inspector) built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 ironic \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/ironic ironic \
+  && mkdir -p /var/lib/openstack/etc/ironic-inspector \
+  && ln -s /var/lib/openstack/etc/ironic-inspector /etc/ironic-inspector \
+  && chown ironic:ironic -h /etc/ironic-inspector \
+  && chown -R ironic:ironic /var/lib/openstack/etc/ironic-inspector
+# Set the environment variables for the ironic-inspector venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build
+USER 42424:42424
+# Set the entrypoint to the ironic-inspector command
+ENTRYPOINT ["/var/lib/openstack/bin/ironic-inspector"]
