@@ -133,6 +133,7 @@ nav:
       - Cinder: containers/cinder.md
       - Glance: containers/glance.md
       - Heat: containers/heat.md
+      - Horizon: containers/horizon.md
       - Ironic API: containers/ironic-api.md
       - Ironic Inspector: containers/ironic-inspector.md
       - Keystone: containers/keystone.md
