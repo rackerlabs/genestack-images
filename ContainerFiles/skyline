@@ -1,6 +1,5 @@
 # syntax = docker/dockerfile:1
-# This Dockerfile uses multi-stage build to customize DEV and PROD images:
-# https://docs.docker.com/develop/develop-images/multistage-build/
+# This Dockerfile builds Skyline from the RackerLabs fork.
 
 ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
@@ -10,44 +9,35 @@ ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
-                                             bash \
-                                             brotli \
-                                             build-essential \
-                                             curl \
-                                             docutils-common \
-                                             gettext \
-                                             git \
-                                             libffi-dev \
-                                             libjs-sphinxdoc \
-                                             libjs-underscore \
-                                             libldap2-dev \
-                                             libpq-dev \
-                                             libsasl2-dev \
-                                             libssl-dev \
-                                             libsystemd-dev \
-                                             libxml2-dev \
-                                             libxslt1-dev \
-                                             libxslt1.1 \
-                                             pkg-config \
-                                             ssl-cert \
-                                             xmlsec1
-RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/skyline-apiserver.git@${OS_VERSION}#egg=skyline-apiserver \
-                                       git+https://opendev.org/openstack/skyline-console.git@${OS_VERSION}#egg=skyline-console \
-                                       PyMySQL \
-                                       python-memcached \
-                                       uwsgi
-
+      apt-utils \
+      gcc \
+      make \
+      nginx \
+      traceroute \
+      lsof \
+      iputils-ping \
+      vim \
+      git \
+      wget \
+      curl \
+      locales-all \
+      ssl-cert
+RUN git clone https://github.com/rackerlabs/skyline-apiserver /opt/skyline-apiserver
+RUN git clone https://github.com/rackerlabs/skyline-console /opt/skyline-console
+RUN mkdir /opt/skyline-apiserver/skyline_console
+RUN tar -czvf /opt/skyline-apiserver/skyline_console/skyline_console.tar.gz -C /opt/skyline-console .
+RUN /var/lib/openstack/bin/pip install -U /opt/skyline-apiserver/skyline_console/skyline_console.tar.gz
+RUN /var/lib/openstack/bin/pip install -r /opt/skyline-apiserver/requirements.txt -c https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
+RUN /var/lib/openstack/bin/pip install -U /opt/skyline-apiserver -c https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
 COPY scripts/skyline-cve-patching.sh /opt/
 RUN bash /opt/skyline-cve-patching.sh
-
 RUN find / -name '*.pyc' -delete \
-  && find / -name '*.pyo' -delete \
-  && find / -name '__pycache__' -delete \
-  && find / -name '*.whl' -delete \
-  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
-  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
-  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python3.12/site-packages/PyJWT-*.dist-info/METADATA
+    && find / -name '*.pyo' -delete \
+    && find / -name '__pycache__' -delete \
+    && find / -name '*.whl' -delete \
+    && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+    && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
 
 FROM python:3.12-slim-bookworm
 LABEL maintainer="Rackspace"
@@ -57,7 +47,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (skyline) built fo
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y nginx \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
@@ -70,11 +60,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s /var/lib/openstack/etc/skyline /etc/skyline \
   && chown skyline:skyline -h /etc/skyline \
   && chown -R skyline:skyline /var/lib/openstack/etc/skyline
-# Set the environment variables for the skyline venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
-# Set the working directory
 WORKDIR /var/lib/openstack
-# Set the user and group to match the original build
 USER 42424:42424
-# Set the entrypoint to the skyline-apiserver command
+EXPOSE 443
 ENTRYPOINT ["/var/lib/openstack/bin/skyline-apiserver"]

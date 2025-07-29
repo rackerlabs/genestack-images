@@ -1,6 +1,6 @@
 # Skyline
 
-The `skyline` image is built from [ContainerFiles/skyline](https://github.com/rackerlabs/genestack-images/blob/main/ContainerFiles/skyline). Security patches are applied by [scripts/skyline-cve-patching.sh](https://github.com/rackerlabs/genestack-images/blob/main/scripts/skyline-cve-patching.sh).
+The `skyline` image is built from [ContainerFiles/skyline](https://github.com/rackerlabs/genestack-images/blob/main/ContainerFiles/skyline). It packages the RackerLabs fork of Skyline and applies security fixes with [scripts/skyline-cve-patching.sh](https://github.com/rackerlabs/genestack-images/blob/main/scripts/skyline-cve-patching.sh).
 
 This container packages the Skyline service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for integration.
 
