@@ -149,5 +149,6 @@ nav:
       - OVS: containers/ovs.md
       - Placement: containers/placement.md
       - Shibd: containers/shibd.md
+      - Skyline: containers/skyline.md
   - Blog: https://blog.rackspacecloud.com/blog
   - Docs: https://docs.rackspacecloud.com
