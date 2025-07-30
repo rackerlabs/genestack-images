@@ -61,7 +61,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown skyline:skyline -h /etc/skyline \
   && chown -R skyline:skyline /var/lib/openstack/etc/skyline \
   && mkdir -p /opt/skyline-apiserver \
-  && ln -s "$(/var/lib/openstack/bin/python3 -c 'import os; import skyline_apiserver as s; print(os.path.dirname(s.__file__))')" /opt/skyline-apiserver/skyline_apiserver
+  && ln -s "$(/var/lib/openstack/bin/python3 -c 'import os; import skyline_apiserver as s; print(os.path.dirname(s.__file__))')" /opt/skyline-apiserver/skyline_apiserver \
+  && mkdir -p /var/log/skyline \
+  && chown -R skyline:skyline /var/log/skyline \
+  && ln -s /var/lib/openstack/bin/gunicorn /usr/local/bin/gunicorn
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 EXPOSE 443
