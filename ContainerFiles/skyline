@@ -59,7 +59,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && mkdir -p /var/lib/openstack/etc/skyline \
   && ln -s /var/lib/openstack/etc/skyline /etc/skyline \
   && chown skyline:skyline -h /etc/skyline \
-  && chown -R skyline:skyline /var/lib/openstack/etc/skyline
+  && chown -R skyline:skyline /var/lib/openstack/etc/skyline \
+  && mkdir -p /opt/skyline-apiserver \
+  && ln -s "$(/var/lib/openstack/bin/python3 -c 'import os; import skyline_apiserver as s; print(os.path.dirname(s.__file__))')" /opt/skyline-apiserver/skyline_apiserver
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 USER 42424:42424
