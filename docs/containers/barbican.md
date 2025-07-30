@@ -21,3 +21,7 @@ graph LR
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)
+
+## Container Image
+
+The container image is available on [Github Container Registry](https://github.com/rackerlabs/genestack-images/pkgs/container/genestack-images%2Fbarbican).

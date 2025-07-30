@@ -22,3 +22,7 @@ graph LR
 ## Dependencies
 
 - Builds From [LibguestFS](libguestfs.md)
+
+## Container Image
+
+The container image is available on [Github Container Registry](https://github.com/rackerlabs/genestack-images/pkgs/container/genestack-images%2Fnova).

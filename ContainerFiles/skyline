@@ -64,6 +64,5 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s "$(/var/lib/openstack/bin/python3 -c 'import os; import skyline_apiserver as s; print(os.path.dirname(s.__file__))')" /opt/skyline-apiserver/skyline_apiserver
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
-USER 42424:42424
 EXPOSE 443
 ENTRYPOINT ["/var/lib/openstack/bin/skyline-apiserver"]
