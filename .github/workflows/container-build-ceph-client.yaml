@@ -115,7 +115,7 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL,HIGH,MEDIUM'
       - name: Upload Trivy scan results to GitHub Security tab
         continue-on-error: true
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -130,7 +130,7 @@ jobs:
           image-ref: '${{ env.IMAGE_NAME }}:local'
           output: trivy.txt
           ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL,HIGH,MEDIUM'
       - name: Create trivy output file in markdown format
         if: ${{ github.event_name == 'pull_request' }}
         run: |
