@@ -33,10 +33,24 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              pkg-config \
                                              ssl-cert \
                                              xmlsec1
-RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+RUN curl -so /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
+RUN sed -i '/^horizon.*/d' /tmp/upper-constraints.txt
+RUN sed -i '/^pyScss.*/d' /tmp/upper-constraints.txt
+RUN /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
                                        git+https://opendev.org/openstack/horizon.git@${OS_VERSION}#egg=horizon \
+                                       git+https://opendev.org/openstack/adjutant-ui@${OS_CONSTRAINTS}#egg=adjutant-ui \
+                                       git+https://opendev.org/openstack/designate-dashboard@${OS_CONSTRAINTS}#egg=designate_dashboard \
+                                       git+https://opendev.org/openstack/heat-dashboard@${OS_CONSTRAINTS}#egg=heat_dashboard \
+                                       git+https://opendev.org/openstack/ironic-ui@${OS_CONSTRAINTS}#egg=ironic-ui \
+                                       git+https://opendev.org/openstack/magnum-ui@${OS_CONSTRAINTS}#egg=magnum-ui \
+                                       git+https://opendev.org/openstack/manila-ui.git@${OS_CONSTRAINTS}#egg=manila-ui \
+                                       git+https://opendev.org/openstack/masakari-dashboard@${OS_CONSTRAINTS}#egg=masakari_dashboard \
+                                       git+https://opendev.org/openstack/mistral-dashboard.git@${OS_CONSTRAINTS}#egg=mistral-dashboard \
+                                       git+https://opendev.org/openstack/neutron-vpnaas-dashboard@${OS_CONSTRAINTS}#egg=neutron_vpnaas_dashboard \
+                                       git+https://opendev.org/openstack/neutron-fwaas-dashboard@${OS_CONSTRAINTS}#egg=neutron_fwaas_dashboard \
+                                       git+https://opendev.org/openstack/octavia-dashboard@${OS_CONSTRAINTS}#egg=octavia_dashboard \
                                        PyMySQL \
-                                       uwsgi
+                                       python-memcached
 COPY scripts/horizon-cve-patching.sh /opt/
 RUN bash /opt/horizon-cve-patching.sh
 RUN find / -name '*.pyc' -delete \
@@ -44,8 +58,7 @@ RUN find / -name '*.pyc' -delete \
   && find / -name '__pycache__' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
-  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
-  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python3.12/site-packages/PyJWT-*.dist-info/METADATA
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
 
 FROM ghcr.io/rackerlabs/genestack-images/apache:latest
 LABEL maintainer="Rackspace"

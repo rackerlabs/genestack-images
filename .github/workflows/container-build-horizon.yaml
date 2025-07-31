@@ -61,7 +61,7 @@ jobs:
       - init
     strategy:
       matrix:
-        openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack_constraints)}}
+        openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
