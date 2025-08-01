@@ -8,6 +8,11 @@ FROM python:${PYTHON_VERSION}-${OS_RELEASE}
 ARG CACHEBUST=0
 RUN python3 -m venv /var/lib/openstack
 RUN /var/lib/openstack/bin/pip install --upgrade pip "setuptools>=80.9.0,<81"
+# NOTE(cloudnull): We install the latest version of pyasyncore to ensure that we have
+#                  the latest version of the asyncore module which is used by various
+#                  services and will be carried until the asyncore module is removed
+#                  other OpenStack dependencies.
+RUN /var/lib/openstack/bin/pip install --upgrade pyasyncore
 ENV PATH="/var/lib/openstack/bin:$PATH" \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
