@@ -1,0 +1,54 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG KUBE_OVN_VERSION=v1.14.4
+FROM golang:1.24-bookworm AS dependency_build
+ARG KUBE_OVN_VERSION=v1.14.4
+ARG CACHEBUST=0
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             git \
+                                             build-essential
+RUN git clone --recursive https://github.com/kubeovn/kube-ovn /opt/kube-ovn
+WORKDIR /opt/kube-ovn
+RUN git checkout ${KUBE_OVN_VERSION} && \
+    git submodule update --init --recursive && \
+    git submodule foreach --recursive git reset --hard && \
+    git submodule foreach --recursive git clean -fdx
+COPY scripts/kube-ovn.sh /opt/
+RUN bash /opt/kube-ovn.sh
+RUN make build-go
+RUN mv /opt/kube-ovn/dist/images/logrotate/* /etc/logrotate.d/ \
+  && rm -rf /opt/kube-ovn/dist/images/logrotate
+
+
+FROM kubeovn/kube-ovn-base:${KUBE_OVN_VERSION}
+# NOTE(cloudnull): Resolves CVE CVE-2025-47268,CVE-2025-48964,CVE-2025-1795,CVE-2025-40909,CVE-2024-12718,CVE-2025-22870,CVE-2025-22872,
+#                               CVE-2025-32988,CVE-2025-32990,CVE-2025-4138,CVE-2025-4330,CVE-2025-4435,CVE-2025-4516,CVE-2025-4517,
+#                               CVE-2025-4877,CVE-2025-4878,CVE-2025-5318,CVE-2025-5351,CVE-2025-5372,CVE-2025-5702,CVE-2025-5987,
+#                               CVE-2025-5994,CVE-2025-6020,CVE-2025-6395,CVE-2025-6965
+RUN curl -L http://archive.ubuntu.com/ubuntu/pool/main/a/apt/apt_2.7.14build2_amd64.deb -o /tmp/apt.deb \
+  && curl -L http://launchpadlibrarian.net/611243934/gpgv_2.2.27-3ubuntu2.1_amd64.deb -o /tmp/gpgv.deb \
+  && dpkg -i /tmp/apt.deb /tmp/gpgv.deb \
+  && rm -f /tmp/apt.deb /tmp/gpgv.deb \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y
+COPY --from=dependency_build /opt/kube-ovn/dist/images/* /kube-ovn/
+COPY --from=dependency_build /etc/logrotate.d/* /etc/logrotate.d/
+# NOTE(cloudnull): Lifted the following steps from https://github.com/kubeovn/kube-ovn/blob/master/dist/images/Dockerfile
+#                  The kube-ovn-cmd binary is used by all the kube-ovn components.
+RUN ln -sf /kube-ovn/kube-ovn-cmd /kube-ovn/kube-ovn-monitor && \
+    ln -sf /kube-ovn/kube-ovn-cmd /kube-ovn/kube-ovn-speaker && \
+    ln -sf /kube-ovn/kube-ovn-cmd /kube-ovn/kube-ovn-webhook && \
+    ln -sf /kube-ovn/kube-ovn-cmd /kube-ovn/kube-ovn-leader-checker && \
+    ln -sf /kube-ovn/kube-ovn-cmd /kube-ovn/kube-ovn-ic-controller && \
+    ln -sf /kube-ovn/kube-ovn-controller /kube-ovn/kube-ovn-pinger && \
+    setcap CAP_NET_BIND_SERVICE+eip /kube-ovn/kube-ovn-cmd && \
+    setcap CAP_NET_RAW,CAP_NET_BIND_SERVICE+eip /kube-ovn/kube-ovn-controller && \
+    setcap CAP_NET_ADMIN,CAP_NET_RAW,CAP_NET_BIND_SERVICE,CAP_SYS_ADMIN+eip /kube-ovn/kube-ovn-daemon
+RUN ln -sf /kube-ovn/grace_stop_ovn_controller /usr/share/ovn/scripts/grace_stop_ovn_controller
+RUN /kube-ovn/iptables-wrapper-installer.sh --no-sanity-check
+WORKDIR /kube-ovn
