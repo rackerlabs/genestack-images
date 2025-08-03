@@ -95,6 +95,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             KUBE_OVN_VERSION=${{ matrix.kube-ovn-version }}
+            KUBE_OVN_VERSION_ENV=${{ matrix.kube-ovn-version }}
             CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
@@ -152,4 +153,5 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             KUBE_OVN_VERSION=${{ matrix.kube-ovn-version }}
+            KUBE_OVN_VERSION_ENV=${{ matrix.kube-ovn-version }}
             CACHEBUST=${{ github.sha }}

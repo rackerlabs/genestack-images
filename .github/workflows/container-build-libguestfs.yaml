@@ -110,6 +110,7 @@ jobs:
           build-args: |
             GUESTFS_VERSION=${{ matrix.libguestfs-version }}
             GUESTFS_HIVEX_VERSION=${{ matrix.libguestfs-hivex-version }}
+            CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -166,3 +167,4 @@ jobs:
           build-args: |
             GUESTFS_VERSION=${{ matrix.libguestfs-version }}
             GUESTFS_HIVEX_VERSION=${{ matrix.libguestfs-hivex-version }}
+            CACHEBUST=${{ github.sha }}
