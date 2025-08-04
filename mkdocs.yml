@@ -30,7 +30,6 @@ theme:
       toggle:
         icon: material/toggle-switch-off
         name: Switch to system preference
-
   font:
     text: Roboto
     code: Roboto Mono
@@ -48,6 +47,7 @@ theme:
     - navigation.instant
     - navigation.instant.progress
     - navigation.instant.preview
+    - navigation.instant.prefetch
     - navigation.prune
     - navigation.path
     - navigation.sections
@@ -78,17 +78,24 @@ extra:
     - icon: fontawesome/solid/blog
       link: https://blog.rackspacecloud.com/
 
-extra_css:
-  - overrides/stylesheets/adr.css
-  - overrides/stylesheets/admonition.css
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/vega@5
+  - https://cdn.jsdelivr.net/npm/vega-lite@5
+  - https://cdn.jsdelivr.net/npm/vega-embed@6
 
 plugins:
   - search
   - swagger-ui-tag
   - mkdocs-material-adr/adr
   - glightbox
+  - charts
 
 markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: vegalite
+          class: vegalite
+          format: !!python/name:mkdocs_charts_plugin.fences.fence_vegalite
   - admonition
   - attr_list
   - md_in_html

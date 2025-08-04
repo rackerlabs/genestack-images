@@ -2,6 +2,7 @@ mkdocs
 mkdocs-material
 mkdocs-material-adr
 mkdocs-swagger-ui-tag
+mkdocs-charts-plugin
 mkdocs-glightbox
 markdown-exec
 reno

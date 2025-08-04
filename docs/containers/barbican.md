@@ -44,3 +44,31 @@ graph LR
 ## Container Image
 
 The container image is available on [Github Container Registry](https://github.com/rackerlabs/genestack-images/pkgs/container/genestack-images%2Fbarbican).
+
+## Security Profile
+
+
+
+<div class="grid cards" markdown>
+- :material-alpha:{ .xl .middle } - Upstream OpenStack Images__
+
+    ``` vegalite
+    {
+    }
+    ```
+
+- :material-alpha:{ .xl .middle } - __Rackspace Genestack Images__
+
+    ``` vegalite
+    {
+        "description": "A simple bar chart with embedded data.",
+        "data": {"url" : "assets/charts/data/basic_bar_chart.json"},
+        "mark": {"type": "bar", "tooltip": true},
+        "encoding": {
+            "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},
+            "y": {"field": "b", "type": "quantitative"}
+        }
+    }
+    ```
+
+</div>
