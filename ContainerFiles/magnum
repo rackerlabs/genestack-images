@@ -41,7 +41,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
 
 COPY scripts/magnum-cve-patching.sh /opt/
 RUN bash /opt/magnum-cve-patching.sh
-
+RUN curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
@@ -57,6 +57,7 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="magnum"
 LABEL org.opencontainers.image.description="OpenStack Service (magnum) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+COPY --from=dependency_build /usr/local/bin/helm /usr/local/bin/helm
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y libxml2 \
