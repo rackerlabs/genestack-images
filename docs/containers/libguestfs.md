@@ -19,6 +19,23 @@ graph LR
     --8<-- "ContainerFiles/libguestfs"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| VENV_TAG | 3.12-latest |
+| GUESTFS_VERSION | master |
+| GUESTFS_HIVEX_VERSION | master |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg VENV_TAG=3.12-latest \
+    --build-arg GUESTFS_VERSION=master \
+    --build-arg GUESTFS_HIVEX_VERSION=master \
+    -f ContainerFiles/libguestfs .
+    ```
+
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)

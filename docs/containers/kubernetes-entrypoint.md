@@ -18,6 +18,17 @@ graph LR
     --8<-- "ContainerFiles/kubernetes-entrypoint"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| _None_ | - |
+
+??? example "Build Command"
+    ```bash
+    docker build -f ContainerFiles/kubernetes-entrypoint .
+    ```
+
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)

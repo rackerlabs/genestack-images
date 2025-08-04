@@ -19,6 +19,29 @@ graph LR
     --8<-- "ContainerFiles/keystone"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| VENV_TAG | 3.12-latest |
+| CACHEBUST | 0 |
+| OS_VERSION | master |
+| OS_CONSTRAINTS | master |
+| RXT_VERSION | main |
+| MOD_WSGI_VERSION | 5.0.2 |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg VENV_TAG=3.12-latest \
+    --build-arg CACHEBUST=0 \
+    --build-arg OS_VERSION=master \
+    --build-arg OS_CONSTRAINTS=master \
+    --build-arg RXT_VERSION=main \
+    --build-arg MOD_WSGI_VERSION=5.0.2 \
+    -f ContainerFiles/keystone .
+    ```
+
 ## Dependencies
 
 - Builds From [Apache](apache.md)

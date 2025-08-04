@@ -19,6 +19,23 @@ graph LR
     --8<-- "ContainerFiles/kube-ovn"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| KUBE_OVN_VERSION | v1.14.4 |
+| KUBE_OVN_VERSION_ENV | v1.14.4 |
+| CACHEBUST | 0 |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg KUBE_OVN_VERSION=v1.14.4 \
+    --build-arg KUBE_OVN_VERSION_ENV=v1.14.4 \
+    --build-arg CACHEBUST=0 \
+    -f ContainerFiles/kube-ovn .
+    ```
+
 ## Dependencies
 
 - Builds From [Upstream Debian](https://hub.docker.com/_/debian)

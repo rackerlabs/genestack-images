@@ -19,6 +19,25 @@ graph LR
     --8<-- "ContainerFiles/neutron"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| BUILT_TAG | v3.5.1-latest |
+| OS_VERSION | master |
+| OS_CONSTRAINTS | master |
+| RXT_VERSION | master |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg BUILT_TAG=v3.5.1-latest \
+    --build-arg OS_VERSION=master \
+    --build-arg OS_CONSTRAINTS=master \
+    --build-arg RXT_VERSION=master \
+    -f ContainerFiles/neutron .
+    ```
+
 ## Dependencies
 
 - Builds From [OvS](ovs.md)

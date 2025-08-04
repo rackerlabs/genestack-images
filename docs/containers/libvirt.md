@@ -19,6 +19,21 @@ graph LR
     --8<-- "ContainerFiles/libvirt"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| BUILT_TAG | v3.5.1-latest |
+| CACHEBUST | 0 |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg BUILT_TAG=v3.5.1-latest \
+    --build-arg CACHEBUST=0 \
+    -f ContainerFiles/libvirt .
+    ```
+
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)

@@ -18,6 +18,27 @@ graph LR
     --8<-- "ContainerFiles/magnum"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| VENV_TAG | 3.12-latest |
+| CACHEBUST | 0 |
+| OS_VERSION | master |
+| OS_CONSTRAINTS | master |
+| OS_CAPI_PLUGIN_VERSION | master |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg VENV_TAG=3.12-latest \
+    --build-arg CACHEBUST=0 \
+    --build-arg OS_VERSION=master \
+    --build-arg OS_CONSTRAINTS=master \
+    --build-arg OS_CAPI_PLUGIN_VERSION=master \
+    -f ContainerFiles/magnum .
+    ```
+
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)

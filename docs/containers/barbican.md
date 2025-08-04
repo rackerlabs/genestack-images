@@ -18,6 +18,25 @@ graph LR
     --8<-- "ContainerFiles/barbican"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| VENV_TAG | 3.12-latest |
+| CACHEBUST | 0 |
+| OS_VERSION | master |
+| OS_CONSTRAINTS | master |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg VENV_TAG=3.12-latest \
+    --build-arg CACHEBUST=0 \
+    --build-arg OS_VERSION=master \
+    --build-arg OS_CONSTRAINTS=master \
+    -f ContainerFiles/barbican .
+    ```
+
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)

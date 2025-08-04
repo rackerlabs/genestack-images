@@ -19,6 +19,23 @@ graph LR
     --8<-- "ContainerFiles/openstack-venv"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| PYTHON_VERSION | 3.12 |
+| OS_RELEASE | bookworm |
+| CACHEBUST | 0 |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg PYTHON_VERSION=3.12 \
+    --build-arg OS_RELEASE=bookworm \
+    --build-arg CACHEBUST=0 \
+    -f ContainerFiles/openstack-venv .
+    ```
+
 ## Dependencies
 
 - Builds From [Upstream Python](https://hub.docker.com/_/python)

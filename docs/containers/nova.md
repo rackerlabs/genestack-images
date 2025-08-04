@@ -19,6 +19,25 @@ graph LR
     --8<-- "ContainerFiles/nova"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| BUILT_TAG | v1.56.1-latest |
+| OS_VERSION | master |
+| OS_CONSTRAINTS | master |
+| NOVNC_VERSION | master |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg BUILT_TAG=v1.56.1-latest \
+    --build-arg OS_VERSION=master \
+    --build-arg OS_CONSTRAINTS=master \
+    --build-arg NOVNC_VERSION=master \
+    -f ContainerFiles/nova .
+    ```
+
 ## Dependencies
 
 - Builds From [LibguestFS](libguestfs.md)

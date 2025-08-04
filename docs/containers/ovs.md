@@ -19,6 +19,21 @@ graph LR
     --8<-- "ContainerFiles/ovs"
     ```
 
+## Build Arguments
+
+| Argument | Default |
+| --- | --- |
+| VENV_TAG | 3.12-latest |
+| OVS_VERSION | main |
+
+??? example "Build Command"
+    ```bash
+    docker build
+    --build-arg VENV_TAG=3.12-latest \
+    --build-arg OVS_VERSION=main \
+    -f ContainerFiles/ovs .
+    ```
+
 ## Dependencies
 
 - Builds From [OpenStack Virtual Environment](openstack-venv.md)
