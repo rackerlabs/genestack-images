@@ -28,13 +28,16 @@ graph LR
 | OS_CONSTRAINTS | master |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg CACHEBUST=0 \
     --build-arg OS_VERSION=master \
     --build-arg OS_CONSTRAINTS=master \
-    -f ContainerFiles/ironic-api .
+    -f ContainerFiles/ironic-api \
+    -t ironic-api:local \
+    .
     ```
 
 ## Dependencies

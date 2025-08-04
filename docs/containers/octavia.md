@@ -29,14 +29,17 @@ graph LR
 | OVN_PLUGIN_VERSION | master |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg CACHEBUST=0 \
     --build-arg OS_VERSION=master \
     --build-arg OS_CONSTRAINTS=master \
     --build-arg OVN_PLUGIN_VERSION=master \
-    -f ContainerFiles/octavia .
+    -f ContainerFiles/octavia \
+    -t octavia:local \
+    .
     ```
 
 ## Dependencies

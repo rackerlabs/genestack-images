@@ -27,12 +27,15 @@ graph LR
 | OS_CONSTRAINTS | master |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg CACHEBUST=0 \
     --build-arg OS_CONSTRAINTS=master \
-    -f ContainerFiles/skyline .
+    -f ContainerFiles/skyline \
+    -t skyline:local \
+    .
     ```
 
 ## Dependencies

@@ -28,12 +28,15 @@ graph LR
 | GUESTFS_HIVEX_VERSION | master |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg GUESTFS_VERSION=master \
     --build-arg GUESTFS_HIVEX_VERSION=master \
-    -f ContainerFiles/libguestfs .
+    -f ContainerFiles/libguestfs \
+    -t libguestfs:local \
+    .
     ```
 
 ## Dependencies

@@ -25,8 +25,9 @@ graph LR
 | _None_ | - |
 
 ??? example "Build Command"
-    ```bash
-    docker build -f ContainerFiles/kubernetes-entrypoint .
+
+    ``` bash
+    docker build -f ContainerFiles/kubernetes-entrypoint -t kubernetes-entrypoint:local .
     ```
 
 ## Dependencies

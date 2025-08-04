@@ -28,12 +28,15 @@ graph LR
 | CEPH_VERSION | main |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg CACHEBUST=0 \
     --build-arg CEPH_VERSION=main \
-    -f ContainerFiles/ceph-libs .
+    -f ContainerFiles/ceph-libs \
+    -t ceph-libs:local \
+    .
     ```
 
 ## Dependencies

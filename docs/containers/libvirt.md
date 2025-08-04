@@ -27,11 +27,14 @@ graph LR
 | CACHEBUST | 0 |
 
 ??? example "Build Command"
-    ```bash
+
+    ``` bash
     docker build
     --build-arg BUILT_TAG=v3.5.1-latest \
     --build-arg CACHEBUST=0 \
-    -f ContainerFiles/libvirt .
+    -f ContainerFiles/libvirt \
+    -t libvirt:local \
+    .
     ```
 
 ## Dependencies

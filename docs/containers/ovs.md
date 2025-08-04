@@ -27,11 +27,14 @@ graph LR
 | OVS_VERSION | main |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg OVS_VERSION=main \
-    -f ContainerFiles/ovs .
+    -f ContainerFiles/ovs \
+    -t ovs:local \
+    .
     ```
 
 ## Dependencies

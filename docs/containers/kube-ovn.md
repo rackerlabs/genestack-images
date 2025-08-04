@@ -28,12 +28,15 @@ graph LR
 | CACHEBUST | 0 |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg KUBE_OVN_VERSION=v1.14.4 \
     --build-arg KUBE_OVN_VERSION_ENV=v1.14.4 \
     --build-arg CACHEBUST=0 \
-    -f ContainerFiles/kube-ovn .
+    -f ContainerFiles/kube-ovn \
+    -t kube-ovn:local \
+    .
     ```
 
 ## Dependencies

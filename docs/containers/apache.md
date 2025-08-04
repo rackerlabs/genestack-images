@@ -28,12 +28,15 @@ graph LR
 | MOD_WSGI_VERSION | 5.0.2 |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg CACHEBUST=0 \
     --build-arg MOD_WSGI_VERSION=5.0.2 \
-    -f ContainerFiles/apache .
+    -f ContainerFiles/apache \
+    -t apache:local \
+    .
     ```
 
 ## Dependencies

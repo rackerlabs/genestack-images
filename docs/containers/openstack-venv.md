@@ -28,12 +28,15 @@ graph LR
 | CACHEBUST | 0 |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg PYTHON_VERSION=3.12 \
     --build-arg OS_RELEASE=bookworm \
     --build-arg CACHEBUST=0 \
-    -f ContainerFiles/openstack-venv .
+    -f ContainerFiles/openstack-venv \
+    -t openstack-venv:local \
+    .
     ```
 
 ## Dependencies

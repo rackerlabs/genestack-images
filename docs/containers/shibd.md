@@ -25,10 +25,13 @@ graph LR
 | CACHEBUST | 0 |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg CACHEBUST=0 \
-    -f ContainerFiles/shibd .
+    -f ContainerFiles/shibd \
+    -t shibd:local \
+    .
     ```
 
 ## Dependencies

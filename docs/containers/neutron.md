@@ -29,13 +29,16 @@ graph LR
 | RXT_VERSION | master |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg BUILT_TAG=v3.5.1-latest \
     --build-arg OS_VERSION=master \
     --build-arg OS_CONSTRAINTS=master \
     --build-arg RXT_VERSION=master \
-    -f ContainerFiles/neutron .
+    -f ContainerFiles/neutron \
+    -t neutron:local \
+    .
     ```
 
 ## Dependencies

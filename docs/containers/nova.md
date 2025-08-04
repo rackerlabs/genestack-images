@@ -29,13 +29,16 @@ graph LR
 | NOVNC_VERSION | master |
 
 ??? example "Build Command"
-    ```bash
-    docker build
+
+    ``` bash
+    docker build \
     --build-arg BUILT_TAG=v1.56.1-latest \
     --build-arg OS_VERSION=master \
     --build-arg OS_CONSTRAINTS=master \
     --build-arg NOVNC_VERSION=master \
-    -f ContainerFiles/nova .
+    -f ContainerFiles/nova \
+    -t nova:local \
+    .
     ```
 
 ## Dependencies
