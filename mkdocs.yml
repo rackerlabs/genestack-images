@@ -91,11 +91,6 @@ plugins:
   - charts
 
 markdown_extensions:
-  - pymdownx.superfences:
-      custom_fences:
-        - name: vegalite
-          class: vegalite
-          format: !!python/name:mkdocs_charts_plugin.fences.fence_vegalite
   - admonition
   - attr_list
   - md_in_html
@@ -112,6 +107,9 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+        - name: vegalite
+          class: vegalite
+          format: !!python/name:mkdocs_charts_plugin.fences.fence_vegalite
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
@@ -144,6 +142,7 @@ nav:
       - Ironic API: containers/ironic-api.md
       - Ironic Inspector: containers/ironic-inspector.md
       - Keystone: containers/keystone.md
+      - Kube-OVN: containers/kube-ovn.md
       - Kubernetes Entrypoint: containers/kubernetes-entrypoint.md
       - Libguestfs: containers/libguestfs.md
       - Libvirt: containers/libvirt.md
