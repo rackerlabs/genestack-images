@@ -140,7 +140,9 @@ nav:
       - Heat: containers/heat.md
       - Horizon: containers/horizon.md
       - Ironic API: containers/ironic-api.md
+      - Ironic Conductor: containers/ironic-conductor.md
       - Ironic Inspector: containers/ironic-inspector.md
+      - Ironic PXE: containers/ironic-pxe.md
       - Keystone: containers/keystone.md
       - Kube-OVN: containers/kube-ovn.md
       - Kubernetes Entrypoint: containers/kubernetes-entrypoint.md
