@@ -78,7 +78,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && mkdir -p /var/lib/openstack/etc/octavia \
   && ln -s /var/lib/openstack/etc/octavia /etc/octavia \
   && chown octavia:octavia -h /etc/octavia \
-  && chown -R octavia:octavia /var/lib/openstack/etc/octavia
+  && chown -R octavia:octavia /var/lib/openstack/etc/octavia \
+  && mkdir -p /etc/dhcp/dhclient-enter-hooks.d \
+  && echo 'make_resolv_conf() { : ; }' | tee /etc/dhcp/dhclient-enter-hooks.d/no-resolv
 # Set the environment variables for the octavia venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
