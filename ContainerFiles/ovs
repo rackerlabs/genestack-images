@@ -59,6 +59,7 @@ COPY --from=dependency_build /lib/x86_64-linux-gnu/libxdp* /lib/x86_64-linux-gnu
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libz* /lib/x86_64-linux-gnu/
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y iproute2 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
