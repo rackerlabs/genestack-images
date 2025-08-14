@@ -86,6 +86,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 netcat-openbsd \
                                                 nfs-common \
                                                 nvme-cli \
+                                                lsscsi \
                                                 open-iscsi \
                                                 ovmf \
                                                 sysfsutils \
