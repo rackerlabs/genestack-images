@@ -131,6 +131,7 @@ edit_uri: "edit/main/docs"
 nav:
   - Home: index.md
   - Containers Images:
+      - Alert-Proxy: containers/alert-proxy.md
       - Apache: containers/apache.md
       - Barbican: containers/barbican.md
       - Ceph Libs: containers/ceph-libs.md
@@ -158,6 +159,5 @@ nav:
       - Placement: containers/placement.md
       - Shibd: containers/shibd.md
       - Skyline: containers/skyline.md
-      - Alert-Proxy: containers/alert-proxy.md
   - Blog: https://blog.rackspacecloud.com/blog
   - Docs: https://docs.rackspacecloud.com

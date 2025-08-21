@@ -1,8 +1,8 @@
-# Alert-Proxy
+# alert-proxy
 
-The `` image is built from [ContainerFiles/alert-proxy](https://github.com/rackerlabs/genestack-images/blob/main/ContainerFiles/alert-proxy). Security patches are applied by [scripts/alert-proxy-cve-patching.sh](https://github.com/rackerlabs/genestack-images/blob/main/scripts/alert-proxy-cve-patching.sh).
+The `alert-proxy` image is built from [ContainerFiles/alert-proxy](https://github.com/rackerlabs/genestack-images/blob/main/ContainerFiles/alert-proxy). Security patches are applied by [scripts/alert-proxy-cve-patching.sh](https://github.com/rackerlabs/genestack-images/blob/main/scripts/alert-proxy-cve-patching.sh).
 
-This container packages the Alert-Proxy service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for integration.
+This container packages the alert-proxy service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for integration.
 
 ``` mermaid
 graph LR
@@ -15,7 +15,7 @@ graph LR
 ??? example "ContainerFile used for the build"
 
     ``` docker
-    --8<-- "ContainerFiles/"
+    --8<-- "ContainerFiles/alert-proxy"
     ```
 
 ## Build Arguments
@@ -31,8 +31,8 @@ graph LR
     docker build \
     --build-arg VENV_TAG=3.12-latest \
     --build-arg CACHEBUST=0 \
-    -f ContainerFiles/ \
-    -t :local \
+    -f ContainerFiles/alert-proxy \
+    -t alert-proxy:local \
     .
     ```
 
@@ -42,4 +42,4 @@ graph LR
 
 ## Container Image
 
-The container image is available on [Github Container Registry](https://github.com/rackerlabs/genestack-images/pkgs/container/genestack-images%2F).
+The container image is available on [Github Container Registry](https://github.com/rackerlabs/genestack-images/pkgs/container/genestack-images%2Falert-proxy).
