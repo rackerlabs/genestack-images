@@ -1,0 +1,56 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
+ARG OS_VERSION=master
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             build-essential \
+                                             git
+
+RUN git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
+RUN /var/lib/openstack/bin/pip install -r /opt/alert-proxy/requirements.txt
+
+COPY scripts/alert-proxy-cve-patching.sh /opt/
+RUN bash /opt/alert-proxy-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="alert-proxy"
+LABEL org.opencontainers.image.description="Alert-Proxy built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+COPY --from=dependency_build /opt/alert-proxy /opt/alert-proxy
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 alert-proxy \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/alert-proxy alert-proxy \
+  && mkdir -p /opt/alert-proxy/config \
+  && chown alert-proxy:alert-proxy -R /opt/alert-proxy
+# Set the environment variables for the alert-proxy venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build
+USER 42424:42424
+# Set the entrypoint to the alert-proxy command
+ENTRYPOINT ["/opt/alert-proxy/alert_proxy/process_alert.py", "--config", "/opt/alert-proxy/config/config.yaml"]
