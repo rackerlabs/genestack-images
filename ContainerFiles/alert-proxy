@@ -25,8 +25,7 @@ RUN find / -name '*.pyc' -delete \
   && find / -name '__pycache__' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
-  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
-  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
 
 FROM python:3.12-slim-bookworm
 LABEL maintainer="Rackspace"
@@ -34,7 +33,7 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="alert-proxy"
 LABEL org.opencontainers.image.description="Alert-Proxy built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-COPY --from=dependency_build /opt/alert-proxcy /opt/alert-proxy
+COPY --from=dependency_build /opt/alert-proxy /opt/alert-proxy
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
