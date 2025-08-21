@@ -53,4 +53,4 @@ WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
 USER 42424:42424
 # Set the entrypoint to the alert-proxy command
-ENTRYPOINT ["/opt/alert-proxy/alert_proxy/process_alert.py", "--config", "/opt/alert-proxy/config/config.yaml"]
+ENTRYPOINT ["/opt/alert-proxy/alert_proxy/alertproxy.py", "--config", "/opt/alert-proxy/config/config.yaml"]
