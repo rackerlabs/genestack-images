@@ -158,5 +158,6 @@ nav:
       - Placement: containers/placement.md
       - Shibd: containers/shibd.md
       - Skyline: containers/skyline.md
+      - Alert-Proxy: containers/alert-proxy.md
   - Blog: https://blog.rackspacecloud.com/blog
   - Docs: https://docs.rackspacecloud.com
