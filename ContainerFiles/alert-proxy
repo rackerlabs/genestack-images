@@ -15,7 +15,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              git
 
 RUN git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
-RUN /var/lib/openstack/bin/pip install -r /opt/alert-proxy/requirments.txt
+RUN /var/lib/openstack/bin/pip install -r /opt/alert-proxy/requirements.txt
 
 COPY scripts/alert-proxy-cve-patching.sh /opt/
 RUN bash /opt/alert-proxy-cve-patching.sh
