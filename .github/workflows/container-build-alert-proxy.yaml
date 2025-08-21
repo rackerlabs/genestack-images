@@ -62,7 +62,6 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            ALERTKEY=${{ secrets.ALERTKEY }}
             CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
@@ -118,5 +117,4 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            ALERTKEY=${{ secrets.ALERTKEY }}
             CACHEBUST=${{ github.sha }}

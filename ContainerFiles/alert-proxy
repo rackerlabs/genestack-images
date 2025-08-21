@@ -5,7 +5,6 @@
 ARG VENV_TAG=3.12-latest
 
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
-ARG ALERTKEY=0
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
@@ -15,9 +14,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              build-essential \
                                              git
 
-RUN echo $ALERTKEY > /tmp/key
-RUN chmod 600 /tmp/key
-RUN GIT_SSH_COMMAND="ssh -i /tmp/key" git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
+RUN git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
 RUN /var/lib/openstack/bin/pip install -r /opt/alert-proxy/requirments.txt
 
 COPY scripts/alert-proxy-cve-patching.sh /opt/
