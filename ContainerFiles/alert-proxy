@@ -15,7 +15,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              build-essential \
                                              git
 
-RUN GIT_SSH_COMMAND="ssh -i $ALERTKEY" git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
+RUN echo $ALERTKEY > /tmp/key
+RUN chmod 600 /tmp/key
+RUN GIT_SSH_COMMAND="ssh -i /tmp/key" git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
 RUN /var/lib/openstack/bin/pip install -r /opt/alert-proxy/requirments.txt
 
 COPY scripts/alert-proxy-cve-patching.sh /opt/
