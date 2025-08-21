@@ -56,4 +56,4 @@ USER 42424:42424
 # Set the entrypoint to the uwsgi command
 ENTRYPOINT ["uwsgi"]
 # Set the default arguments for the uwsgi command
-CMD ["--ini", "/opt/alert-proxy/config/uwsgi.ini", "--daemonize=alert-proxy"]
+CMD ["--ini", "/opt/alert-proxy/src/config/uwsgi.ini", "--daemonize=alert-proxy"]
