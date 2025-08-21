@@ -52,5 +52,7 @@ ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
 USER 42424:42424
-# Set the entrypoint to the alert-proxy command
-ENTRYPOINT ["/opt/alert-proxy/alert_proxy/alertproxy.py", "--config", "/opt/alert-proxy/config/config.yaml"]
+# Set the entrypoint to the uwsgi command
+ENTRYPOINT ["uwsgi"]
+# Set the default arguments for the uwsgi command
+CMD ["--ini", "/opt/alert-proxy/config/uwsgi.ini", "--daemonize=alert-proxy"]
