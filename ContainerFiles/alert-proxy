@@ -45,7 +45,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 alert-proxy \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/alert-proxy alert-proxy \
-  && mkdir -p /opt/alert-proxy/config \
   && chown alert-proxy:alert-proxy -R /opt/alert-proxy
 # Set the environment variables for the alert-proxy venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
