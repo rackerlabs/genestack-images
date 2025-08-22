@@ -45,7 +45,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 alert-proxy \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/alert-proxy alert-proxy \
-  && chown alert-proxy:alert-proxy -R /opt/alert-proxy
+  && mkdir -p /var/lib/openstack/etc/alert-proxy \
+  && ln -s /var/lib/openstack/etc/placement /etc/alert-proxy \
+  && chown alert-proxy:alert-proxy -R /opt/alert-proxy \
+  && chown -R alert-proxy:alert-proxy /var/lib/openstack/etc/alert-proxy
+
 # Set the environment variables for the alert-proxy venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
@@ -55,4 +59,4 @@ USER 42424:42424
 # Set the entrypoint to the uwsgi command
 ENTRYPOINT ["uwsgi"]
 # Set the default arguments for the uwsgi command
-CMD ["--ini", "/opt/alert-proxy/src/config/uwsgi.ini", "--daemonize=alert-proxy"]
+CMD ["--ini", "/etc/alert-proxy/uwsgi.ini"]
