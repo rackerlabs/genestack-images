@@ -55,7 +55,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # Set the environment variables for the alert-proxy venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
-WORKDIR /var/lib/openstack
+WORKDIR /opt/alert-proxy
 # Set the user and group to match the original build
 USER 42424:42424
 # Set the entrypoint to the uwsgi command
