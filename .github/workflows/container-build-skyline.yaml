@@ -22,10 +22,10 @@ on:
       openstack-constraints:
         description: 'Version of OpenStack Constraints to use'
         required: true
-        default: "stable/2024.2"
+        default: "stable/2025.1"
         type: choice
         options:
-          - "stable/2024.2"
+          - "stable/2025.1"
       project-version:
         description: 'Version of OpenStack Skyline to build, defaults to openstack-constraints if unspecified'
         required: false
@@ -39,7 +39,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2024.2"]
+    ["stable/2025.1"]
 
 jobs:
   init:
