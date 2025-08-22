@@ -46,7 +46,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && groupadd --system --gid 42424 alert-proxy \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/alert-proxy alert-proxy \
   && mkdir -p /var/lib/openstack/etc/alert-proxy \
-  && ln -s /var/lib/openstack/etc/placement /etc/alert-proxy \
+  && ln -s /var/lib/openstack/etc/alert-proxy /etc/alert-proxy \
   && chown alert-proxy:alert-proxy -R /opt/alert-proxy \
   && chown -R alert-proxy:alert-proxy /var/lib/openstack/etc/alert-proxy
 
