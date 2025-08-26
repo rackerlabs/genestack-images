@@ -154,6 +154,7 @@ nav:
       - Neutron: containers/neutron.md
       - Nova: containers/nova.md
       - Octavia: containers/octavia.md
+      - Openstack Client: containers/openstack-client.md
       - Openstack Venv: containers/openstack-venv.md
       - OVS: containers/ovs.md
       - Placement: containers/placement.md

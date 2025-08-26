@@ -1,0 +1,124 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             bash \
+                                             build-essential \
+                                             curl \
+                                             docutils-common \
+                                             gettext \
+                                             git \
+                                             libffi-dev \
+                                             pkg-config \
+                                             ssl-cert \
+# package list pulled from here: https://opendev.org/openstack/heat/src/branch/master/requirements.txt
+RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
+                                       pbr \
+                                       alembic \
+                                       croniter \
+                                       cryptography \
+                                       keystoneauth1 \
+                                       keystonemiddleware \
+                                       lxml> \
+                                       netaddr \ 
+                                       neutron-lib \
+                                       openstacksdk \
+                                       oslo.cache\
+                                       oslo.config \
+                                       oslo.concurrency \
+                                       oslo.context \
+                                       oslo.db \
+                                       oslo.i18n \
+                                       oslo.log \
+                                       oslo.messaging \
+                                       oslo.middleware \
+                                       oslo.policy \
+                                       oslo.reports \
+                                       oslo.serialization \
+                                       oslo.service[threading] \
+                                       oslo.upgradecheck \
+                                       oslo.utils \
+                                       osprofiler \
+                                       oslo.versionedobjects \
+                                       PasteDeploy \
+                                       aodhclient \
+                                       python-barbicanclient \
+                                       python-blazarclient \
+                                       python-cinderclient \
+                                       python-designateclient \
+                                       python-glanceclient \
+                                       python-heatclient \
+                                       python-ironicclient \
+                                       python-keystoneclient \
+                                       python-magnumclient \
+                                       python-manilaclient \
+                                       python-mistralclient \
+                                       python-neutronclient \
+                                       python-novaclient \
+                                       python-octaviaclient \
+                                       python-openstackclient \
+                                       python-swiftclient \
+                                       python-troveclient \
+                                       python-vitrageclient \
+                                       python-zaqarclient \
+                                       python-zunclient \
+                                       PyYAML \
+                                       requests \
+                                       tenacity \
+                                       tzdata \
+                                       Routes \
+                                       SQLAlchemy \
+                                       stevedore \
+                                       WebOb \
+                                       yaql
+
+COPY scripts/openstack-client-cve-patching.sh /opt/
+RUN bash /opt/openstack-client-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="openstack-client"
+LABEL org.opencontainers.image.description="OpenStack Client (openstack-client) built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y curl \
+                                                iputils-ping \
+                                                libxml2 \
+                                                libxslt1.1 \
+                                                libopenmpi3 \
+                                                netcat-openbsd
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 openstack-client \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/openstaclclient openstack-client \
+  && mkdir -p /var/lib/openstack/etc/openstack-client \
+  && ln -s /var/lib/openstack/etc/openstack-client /etc/openstack-client \
+  && chown openstack-client:openstack-client -h /etc/openstack-client \
+  && chown -R openstack-client:openstack-client /var/lib/openstack/etc/openstack-client
+# Set the environment variables for the openstack-client venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build
+USER 42424:42424
