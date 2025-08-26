@@ -17,9 +17,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              git \
                                              libffi-dev \
                                              pkg-config \
-                                             ssl-cert \
+                                             ssl-cert 
 # package list pulled from here: https://opendev.org/openstack/heat/src/branch/master/requirements.txt
-RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
+RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        pbr \
                                        alembic \
                                        croniter \
@@ -103,7 +103,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 libxml2 \
                                                 libxslt1.1 \
                                                 libopenmpi3 \
-                                                netcat-openbsd
+                                                netcat-openbsd \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
