@@ -24,7 +24,7 @@ graph LR
 | --- | --- |
 | VENV_TAG | 3.12-latest |
 | CACHEBUST | 0 |
-| ARG OS_CONSTRAINTS | master |
+| OS_CONSTRAINTS | master |
 
 ??? example "Build Command"
 
