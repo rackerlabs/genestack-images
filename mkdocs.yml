@@ -151,6 +151,7 @@ nav:
       - Libvirt: containers/libvirt.md
       - Magnum: containers/magnum.md
       - Masakari: containers/masakari.md
+      - Masakari-Monitors: containers/masakari-monitors.md
       - Neutron: containers/neutron.md
       - Nova: containers/nova.md
       - Octavia: containers/octavia.md
