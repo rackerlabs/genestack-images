@@ -100,7 +100,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 nova \
-  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/nova nova \
+  && useradd --system --gid 42424 --uid 42424 --shell /bin/bash --create-home --home /var/lib/nova nova \
   && mkdir -p /var/lib/openstack/etc/nova \
   && ln -s /var/lib/openstack/etc/nova /etc/nova \
   && chown nova:nova -h /etc/nova \
