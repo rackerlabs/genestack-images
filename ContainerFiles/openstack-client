@@ -17,7 +17,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              git \
                                              libffi-dev \
                                              pkg-config \
-                                             ssl-cert 
+                                             ssl-cert
 # package list pulled from here: https://opendev.org/openstack/heat/src/branch/master/requirements.txt
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        pbr \
@@ -27,7 +27,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        keystoneauth1 \
                                        keystonemiddleware \
                                        lxml> \
-                                       netaddr \ 
+                                       netaddr \
                                        neutron-lib \
                                        openstacksdk \
                                        oslo.cache\
@@ -87,10 +87,11 @@ RUN find / -name '*.pyc' -delete \
   && find / -name '__pycache__' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
-  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
+  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
 
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="openstack-client"
