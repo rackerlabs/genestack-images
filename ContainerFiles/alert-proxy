@@ -36,7 +36,7 @@ COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 COPY --from=dependency_build /opt/alert-proxy /opt/alert-proxy
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y libxml2 curl \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
