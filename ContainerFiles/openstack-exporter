@@ -1,18 +1,38 @@
-FROM python:3.9-slim
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
 
+ARG VENV_TAG=3.12-latest
+
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 WORKDIR /app
-
-# Copy requirements and install dependencies
 COPY scripts/openstack-exporter-app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the exporter script
-COPY scripts/openstack-exporter-app/openstack_exporter.py .
+RUN /var/lib/openstack/bin/pip install --no-cache-dir -r requirements.txt
+RUN find / -name '*.pyc' -delete \
+    && find / -name '*.pyo' -delete \
+    && find / -name '__pycache__' -delete
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL org.opencontainers.image.name="openstack-exporter"
+LABEL org.opencontainers.image.description="OpenStack Exporter for Prometheus"
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y curl \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the environment variables for the openstack-exporter
+ENV PATH="/var/lib/openstack/bin:$PATH"
+COPY scripts/openstack-exporter-app/openstack_exporter.py /app/
 
 # Expose port from environment variable, default to 49152
+WORKDIR /app
 ARG EXPORTER_PORT=49152
 ENV EXPORTER_PORT=${EXPORTER_PORT}
 EXPOSE ${EXPORTER_PORT}
-
 # Run the exporter, expecting config.yaml to be mounted
 CMD ["python", "openstack_exporter.py"]
