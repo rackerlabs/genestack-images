@@ -20,7 +20,7 @@ def load_services(config_path):
     try:
         with open(config_path, 'r') as f:
             services = yaml.safe_load(f)['services']
-        return [(s['name'], s['endpoint'], 'public') for s in services]  # Adjusted for config.yaml structure
+        return [(s['name'], s['endpoint'], 'public') for s in services]
     except Exception as e:
         logger.error(f"Failed to load config: {e}")
         return []
@@ -41,7 +41,7 @@ def check_service_status(service_name, endpoint, sess):
 
 def main():
     port = int(os.environ.get('EXPORTER_PORT', 49152))
-    config_path = '/etc/openstack-exporter/config.yaml'
+    config_path = '/etc/openstack-exporter/probe_target.yaml'
 
     start_http_server(port)
     logger.info(f"Prometheus metrics available at http://0.0.0.0:{port}/metrics")
