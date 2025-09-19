@@ -151,6 +151,7 @@ nav:
       - Libguestfs: containers/libguestfs.md
       - Libvirt: containers/libvirt.md
       - Magnum: containers/magnum.md
+      - Manila: containers/manila.md
       - Masakari: containers/masakari.md
       - Masakari-Monitors: containers/masakari-monitors.md
       - Neutron: containers/neutron.md
