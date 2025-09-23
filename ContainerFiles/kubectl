@@ -1,5 +1,5 @@
 # Simple, reliable kubectl container for Velero operations
-FROM debian:trixie-slim
+FROM debian:bookworm-slim
 # Set kubectl version
 ARG KUBECTL_VERSION=v1.32.1
 ARG TARGETARCH=amd64
@@ -17,7 +17,6 @@ RUN bash /opt/alert-proxy-cve-patching.sh
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
-    libc6 \
     && curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
     && chmod +x kubectl \
     && mv kubectl /usr/local/bin/kubectl \
