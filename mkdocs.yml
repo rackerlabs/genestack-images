@@ -146,7 +146,7 @@ nav:
       - Ironic Inspector: containers/ironic-inspector.md
       - Ironic PXE: containers/ironic-pxe.md
       - Keystone: containers/keystone.md
-      - Kubectl: containers/kubbectl.md
+      - Kubectl: containers/kubectl.md
       - Kube-OVN: containers/kube-ovn.md
       - Kubernetes Entrypoint: containers/kubernetes-entrypoint.md
       - Libguestfs: containers/libguestfs.md
