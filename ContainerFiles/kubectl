@@ -10,8 +10,8 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="kubectl"
 
 # Run the CVE patching script
-COPY scripts/alert-proxy-cve-patching.sh /opt/
-RUN bash /opt/alert-proxy-cve-patching.sh
+#COPY scripts/alert-proxy-cve-patching.sh /opt/
+#RUN bash /opt/alert-proxy-cve-patching.sh
 
 # Install minimal required packages and clean up in same layer
 RUN apt-get update && apt-get install -y \
