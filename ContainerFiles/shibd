@@ -2,7 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-FROM debian:trixie-slim
+FROM ubuntu:noble-slim
 ARG CACHEBUST=0
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"

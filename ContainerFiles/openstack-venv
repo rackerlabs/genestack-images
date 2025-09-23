@@ -3,7 +3,7 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 ARG PYTHON_VERSION=3.12
-ARG OS_RELEASE=bookworm
+ARG OS_RELEASE=noble
 FROM python:${PYTHON_VERSION}-${OS_RELEASE}
 ARG CACHEBUST=0
 RUN python3 -m venv /var/lib/openstack
