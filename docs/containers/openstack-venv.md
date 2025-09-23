@@ -24,7 +24,7 @@ graph LR
 | Argument | Default |
 | --- | --- |
 | PYTHON_VERSION | 3.12 |
-| OS_RELEASE | bookworm |
+| OS_RELEASE | trixie |
 | CACHEBUST | 0 |
 
 ??? example "Build Command"
@@ -32,7 +32,7 @@ graph LR
     ``` bash
     docker build \
     --build-arg PYTHON_VERSION=3.12 \
-    --build-arg OS_RELEASE=bookworm \
+    --build-arg OS_RELEASE=trixie \
     --build-arg CACHEBUST=0 \
     -f ContainerFiles/openstack-venv \
     -t openstack-venv:local \
