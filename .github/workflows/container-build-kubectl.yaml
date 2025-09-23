@@ -1,0 +1,120 @@
+---
+name: Create and publish a Kubectl image
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  packages: write
+  pull-requests: write
+  security-events: write
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/container-build-kubectl.yaml
+      - ContainerFiles/kubectl
+  schedule:
+    - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/kubectl
+  CATEGORY_NAME: kubectl
+
+jobs:
+  build-and-push-image:
+    outputs:
+      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
+      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
+      - name: Dynamically set MY_DATE environment variable
+        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ContainerFiles/kubectl
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.IMAGE_NAME }}:local
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CACHEBUST=${{ github.sha }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:local'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        continue-on-error: true
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: "${{ env.CATEGORY_NAME }}"
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:local'
+          output: trivy.txt
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+      - name: Create trivy output file in markdown format
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ -s trivy.txt ]]; then
+              echo "### Security Output" > trivy-output.txt
+              echo '```terraform' >> trivy-output.txt
+              cat trivy.txt >> trivy-output.txt
+              echo '```' >> trivy-output.txt
+          fi
+      - name: Publish Trivy Output to Summary
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ -s trivy-output.txt ]]; then
+            {
+              cat trivy-output.txt
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ContainerFiles/kubectl
+          push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CACHEBUST=${{ github.sha }}

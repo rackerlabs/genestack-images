@@ -1,0 +1,47 @@
+# Simple, reliable kubectl container for Velero operations
+FROM debian:trixie-slim
+# Set kubectl version
+ARG KUBECTL_VERSION=v1.32.1
+ARG TARGETARCH=amd64
+ARG CACHEBUST=0
+
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="kubectl"
+
+# Run the CVE patching script
+COPY scripts/alert-proxy-cve-patching.sh /opt/
+RUN bash /opt/alert-proxy-cve-patching.sh
+
+# Install minimal required packages and clean up in same layer
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    && curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/kubectl \
+    && apt-get remove -y curl \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+
+# Verify installation
+RUN kubectl version --client && which kubectl && which sh
+
+# Create kubectl symlink for redundancy
+RUN ln -sf /usr/local/bin/kubectl /usr/bin/kubectl
+
+# Create .kube directory
+RUN mkdir -p /.kube && chmod g+rwX /.kube
+
+# Use non-root user
+USER 1001
+
+# Final verification
+RUN kubectl version --client
+
+CMD ["/bin/bash"]
+
+LABEL org.opencontainers.image.title="kubectl" \
+      kubectl.version="${KUBECTL_VERSION}"
+
