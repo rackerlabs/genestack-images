@@ -24,6 +24,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        alembic \
                                        croniter \
                                        cryptography \
+                                       gnocchiclient \
                                        keystoneauth1 \
                                        keystonemiddleware \
                                        lxml> \
