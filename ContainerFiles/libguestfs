@@ -97,7 +97,7 @@ RUN PROC="$([ nproc > 4 ] && echo 4 || nproc)" make -j $PROC
 RUN make INSTALLDIRS=vendor REALLY_INSTALL=yes install
 
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-noble
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="libguestfs"

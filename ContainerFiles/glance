@@ -10,6 +10,8 @@ ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
+                                             apt-transport-https \
+                                             ca-certificates \
                                              bash \
                                              brotli \
                                              build-essential \
@@ -55,15 +57,36 @@ RUN find / -name '*.pyc' -delete \
   && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
 
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-noble
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="glance"
 LABEL org.opencontainers.image.description="OpenStack Service (glance) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
+           CEPH_KEY=http://download.ceph.com/keys/release.asc \
+           CEPH_REPO="deb https://download.ceph.com/debian-tentacle noble main" \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y \
+                                               apt-transport-https \
+                                               ca-certificates \
+                                               gnupg2 \
+                                               curl \
+                                               libxml2 \
+  && curl -o /etc/apt/trusted.gpg.d/ceph.asc ${CEPH_KEY} \
+  && echo "${CEPH_REPO}" >/etc/apt/sources.list.d/ceph.list \
+  && cat /etc/apt/sources.list.d/ceph.list \
+  && apt-get update && apt-get install --no-install-recommends -y \
+                                               ceph-common \
+                                               python3-ceph \
+                                               python3-ceph-common \
+                                               python3-cephfs \
+                                               python3-rados \
+                                               python3-rbd \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import rados; print(rados.__file__)'` \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import rbd; print(rbd.__file__)'` \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import cephfs; print(cephfs.__file__)'` \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import ceph_argparse; print(ceph_argparse.__file__)'` \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
