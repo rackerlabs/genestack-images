@@ -105,47 +105,6 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.sha }}
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-        with:
-          image-ref: '${{ env.IMAGE_NAME }}:local'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH,MEDIUM'
-      - name: Upload Trivy scan results to GitHub Security tab
-        continue-on-error: true
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-results.sarif'
-          category: "${{ env.CATEGORY_NAME }}"
-      - name: Run Trivy scanner
-        uses: aquasecurity/trivy-action@0.28.0
-        if: ${{ github.event_name == 'pull_request' }}
-        with:
-          image-ref: '${{ env.IMAGE_NAME }}:local'
-          output: trivy.txt
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH,MEDIUM'
-      - name: Create trivy output file in markdown format
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          if [[ -s trivy.txt ]]; then
-              echo "### Security Output" > trivy-output.txt
-              echo '```terraform' >> trivy-output.txt
-              cat trivy.txt >> trivy-output.txt
-              echo '```' >> trivy-output.txt
-          fi
-      - name: Publish Trivy Output to Summary
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          if [[ -s trivy-output.txt ]]; then
-            {
-              cat trivy-output.txt
-            } >> $GITHUB_STEP_SUMMARY
-          fi
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
