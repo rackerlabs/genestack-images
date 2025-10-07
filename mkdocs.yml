@@ -134,6 +134,7 @@ nav:
       - Alert-Proxy: containers/alert-proxy.md
       - Apache: containers/apache.md
       - Barbican: containers/barbican.md
+      - Blazar: containers/blazar.md
       - Ceph Libs: containers/ceph-libs.md
       - Designate: containers/designate.md
       - Cinder: containers/cinder.md
@@ -146,11 +147,13 @@ nav:
       - Ironic Inspector: containers/ironic-inspector.md
       - Ironic PXE: containers/ironic-pxe.md
       - Keystone: containers/keystone.md
+      - Kubectl: containers/kubectl.md
       - Kube-OVN: containers/kube-ovn.md
       - Kubernetes Entrypoint: containers/kubernetes-entrypoint.md
       - Libguestfs: containers/libguestfs.md
       - Libvirt: containers/libvirt.md
       - Magnum: containers/magnum.md
+      - Manila: containers/manila.md
       - Masakari: containers/masakari.md
       - Masakari-Monitors: containers/masakari-monitors.md
       - Neutron: containers/neutron.md

@@ -24,6 +24,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        alembic \
                                        croniter \
                                        cryptography \
+                                       gnocchiclient \
                                        keystoneauth1 \
                                        keystonemiddleware \
                                        lxml> \
@@ -114,7 +115,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 openstack-client \
-  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/openstaclclient openstack-client \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/openstack-client openstack-client \
   && mkdir -p /var/lib/openstack/etc/openstack-client \
   && ln -s /var/lib/openstack/etc/openstack-client /etc/openstack-client \
   && chown openstack-client:openstack-client -h /etc/openstack-client \
