@@ -63,7 +63,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils systemctl lsscsi nvme-cli \
+  && apt-get install --no-install-recommends -y libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils systemctl lsscsi nvme-cli sudo nfs-common \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
@@ -73,9 +73,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && groupadd --system --gid 42424 cinder \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/cinder cinder \
   && mkdir -p /var/lib/openstack/etc/cinder \
+  && mkdir -p /var/lib/cinder/mnt \
   && ln -s /var/lib/openstack/etc/cinder /etc/cinder \
   && chown cinder:cinder -h /etc/cinder \
-  && chown -R cinder:cinder /var/lib/openstack/etc/cinder
+  && chown -R cinder:cinder /var/lib/openstack/etc/cinder \
+                            /var/lib/cinder/mnt
 # Set the environment variables for the cinder venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
