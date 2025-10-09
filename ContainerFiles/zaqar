@@ -36,7 +36,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        git+https://opendev.org/openstack/zaqar.git@${OS_VERSION}#egg=zaqar \
                                        PyMySQL \
                                        python-memcached \
-                                       uwsgi
+                                       uwsgi \
                                        redis
 
 COPY scripts/zaqar-cve-patching.sh /opt/
