@@ -26,7 +26,6 @@ on:
         type: choice
         options:
           - master
-          - stable/2024.1
           - stable/2025.1
       project-version:
         description: 'Version of OpenStack Zaqar to build, defaults to openstack-constraints if unspecified'
@@ -41,7 +40,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2024.1", "stable/2025.1"]
+    ["stable/2025.1"]
 
 jobs:
   init:
