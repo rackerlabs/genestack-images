@@ -37,7 +37,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        PyMySQL \
                                        python-memcached \
                                        uwsgi \
-                                       redis
+                                       redis \
+                                       'autobahn[encryption]'
 
 COPY scripts/zaqar-cve-patching.sh /opt/
 RUN bash /opt/zaqar-cve-patching.sh
