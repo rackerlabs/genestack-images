@@ -61,7 +61,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (Keystone) built f
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libapache2-mod-shib \
+  && apt-get install --no-install-recommends -y libapache2-mod-shib libapache2-mod-auth-openidc \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
