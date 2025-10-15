@@ -139,6 +139,7 @@ nav:
       - Designate: containers/designate.md
       - Cinder: containers/cinder.md
       - Cloudkitty: containers/cloudkitty.md
+      - Freezer: containers/freezer.md
       - Glance: containers/glance.md
       - Heat: containers/heat.md
       - Horizon: containers/horizon.md
