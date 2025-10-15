@@ -113,6 +113,7 @@ jobs:
           output: 'trivy-results.sarif'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+          skip-files: '**/autobahn/wamp/cryptosign.py'
       - name: Upload Trivy scan results to GitHub Security tab
         continue-on-error: true
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -128,6 +129,7 @@ jobs:
           output: trivy.txt
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+          skip-files: '**/autobahn/wamp/cryptosign.py'
       - name: Create trivy output file in markdown format
         if: ${{ github.event_name == 'pull_request' }}
         run: |
