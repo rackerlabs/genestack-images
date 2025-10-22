@@ -12,7 +12,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              build-essential \
-                                             git
+                                             git \
+                                             curl
 RUN git clone https://github.com/rackerlabs/alert-proxy.git /opt/alert-proxy
 RUN /var/lib/openstack/bin/pip install -r /opt/alert-proxy/requirements.txt
 
