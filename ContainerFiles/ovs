@@ -2,7 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
+ARG VENV_TAG=3.13-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG OVS_VERSION=main
 RUN export DEBIAN_FRONTEND=noninteractive \
@@ -40,7 +40,7 @@ RUN ./boot.sh
 RUN ./configure --sysconfdir=/etc --localstatedir=/var
 RUN PROC="$([ nproc > 4 ] && echo 4 || nproc)" make -j $PROC && make install
 
-FROM python:3.12-slim-trixie
+FROM python:3.13-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="ovs"

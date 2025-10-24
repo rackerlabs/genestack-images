@@ -23,7 +23,7 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| VENV_TAG | 3.12-latest |
+| VENV_TAG | 3.13-latest |
 | CACHEBUST | 0 |
 | MOD_WSGI_VERSION | 5.0.2 |
 
@@ -31,7 +31,7 @@ graph LR
 
     ``` bash
     docker build \
-    --build-arg VENV_TAG=3.12-latest \
+    --build-arg VENV_TAG=3.13-latest \
     --build-arg CACHEBUST=0 \
     --build-arg MOD_WSGI_VERSION=5.0.2 \
     -f ContainerFiles/apache \
