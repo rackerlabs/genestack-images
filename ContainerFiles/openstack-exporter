@@ -13,7 +13,7 @@ RUN find / -name '*.pyc' -delete \
     && find / -name '*.pyo' -delete \
     && find / -name '__pycache__' -delete
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL org.opencontainers.image.name="openstack-exporter"
 LABEL org.opencontainers.image.description="OpenStack Exporter for Prometheus"

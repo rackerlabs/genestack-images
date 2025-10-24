@@ -40,7 +40,7 @@ RUN ./boot.sh
 RUN ./configure --sysconfdir=/etc --localstatedir=/var
 RUN PROC="$([ nproc > 4 ] && echo 4 || nproc)" make -j $PROC && make install
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="ovs"
