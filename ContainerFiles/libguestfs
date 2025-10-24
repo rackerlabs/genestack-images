@@ -2,7 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
+ARG VENV_TAG=3.13-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG GUESTFS_VERSION=master
 ARG GUESTFS_HIVEX_VERSION=master
@@ -23,13 +23,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 git \
                                                 gperf \
                                                 libacl1-dev \
-                                                libacl1-dev \
                                                 libaugeas-dev \
                                                 libbpf-dev \
                                                 libcap-dev \
-                                                libcap-dev \
                                                 libcap-ng-dev \
-                                                libconfig-dev \
                                                 libconfig-dev \
                                                 libffi-dev \
                                                 libfuse-dev \
@@ -45,24 +42,19 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 libsystemd-dev \
                                                 libtirpc-dev \
                                                 libtsk-dev \
-                                                libtsk-dev \
                                                 libvirt-dev \
                                                 libxdp-dev \
                                                 libxml2-dev \
                                                 libxslt1-dev \
                                                 libxslt1.1 \
                                                 libyara-dev \
-                                                libyara-dev \
                                                 opam \
                                                 pkg-config \
                                                 qemu-block-extra \
-                                                qemu-block-extra \
                                                 qemu-system \
-                                                qemu-utils \
                                                 qemu-utils \
                                                 rsync \
                                                 ssl-cert \
-                                                supermin \
                                                 supermin \
                                                 xmlsec1 \
                                                 xorriso \
@@ -98,7 +90,7 @@ RUN PROC="$([ nproc > 4 ] && echo 4 || nproc)" make -j $PROC
 RUN make INSTALLDIRS=vendor REALLY_INSTALL=yes install
 
 
-FROM python:3.12-slim-trixie
+FROM python:3.13-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="libguestfs"

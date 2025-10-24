@@ -2,7 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
+ARG VENV_TAG=3.13-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
 ARG CEPH_VERSION=main
@@ -102,7 +102,7 @@ WORKDIR /opt/ceph/build
 RUN ninja rbd rados cephfs
 RUN ninja install
 
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:3.13-latest
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="ceph-libs"

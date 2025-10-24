@@ -2,7 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
+ARG VENV_TAG=3.13-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
 ARG OS_VERSION=master
@@ -51,7 +51,7 @@ RUN find / -name '*.pyc' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
   && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
 
-FROM python:3.12-slim-trixie
+FROM python:3.13-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="manila"
