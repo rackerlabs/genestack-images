@@ -1,0 +1,76 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+
+FROM quay.io/rackspace/rackerlabs-nova-efi:2024.1-ubuntu_jammy-1737928811 AS dependency_build
+ARG CACHEBUST=0
+ARG OS_VERSION=master
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             build-essential
+
+COPY scripts/nova-ceph-cve-patching.sh /opt/
+RUN bash /opt/nova-ceph-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="nova-ceph"
+LABEL org.opencontainers.image.description="Nova container with ceph built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y dosfstools \
+                                                cryptsetup \
+                                                genisoimage \
+                                                gir1.2-libosinfo-1.0 \
+                                                iptables \
+                                                kpartx \
+                                                ksmtuned \
+                                                libgirepository-1.0-1 \
+                                                libguestfs0 \
+                                                libosinfo-bin \
+                                                libxml2 \
+                                                multipath-tools \
+                                                netcat-openbsd \
+                                                nfs-common \
+                                                nvme-cli \
+                                                lsscsi \
+                                                open-iscsi \
+                                                ovmf \
+                                                sysfsutils \
+                                                sudo \
+                                                ssh \
+                                                qemu-block-extra \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /etc/ssh/ssh_host_*_key \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 nova \
+  && useradd --system --gid 42424 --uid 42424 --shell /bin/bash --create-home --home /var/lib/nova nova \
+  && mkdir -p /var/lib/openstack/etc/nova \
+  && ln -s /var/lib/openstack/etc/nova /etc/nova \
+  && chown nova:nova -h /etc/nova \
+  && chown -R nova:nova /var/lib/openstack/etc/nova
+# Set the environment variables for the nova venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build
+USER 42424:42424
+# Set the entrypoint to the nova-manage command
+ENTRYPOINT ["/var/lib/openstack/bin/nova-manage"]
