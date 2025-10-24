@@ -1,5 +1,5 @@
 # Simple, reliable kubectl container for Velero operations
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 # Set kubectl version
 ARG KUBECTL_VERSION=v1.34.1
 ARG TARGETARCH=amd64
