@@ -43,6 +43,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 libsasl2-dev \
                                                 libssl-dev \
                                                 libsystemd-dev \
+                                                libtirpc-dev \
                                                 libtsk-dev \
                                                 libtsk-dev \
                                                 libvirt-dev \
