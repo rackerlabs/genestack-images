@@ -21,7 +21,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/openstack-venv
-  PYTHON_VERSION: 3.12
+  PYTHON_VERSION: 3.13
   CATEGORY_NAME: openstack-venv
 
 jobs:

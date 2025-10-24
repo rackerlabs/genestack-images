@@ -23,7 +23,7 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| PYTHON_VERSION | 3.12 |
+| PYTHON_VERSION | 3.13 |
 | OS_RELEASE | trixie |
 | CACHEBUST | 0 |
 
@@ -31,7 +31,7 @@ graph LR
 
     ``` bash
     docker build \
-    --build-arg PYTHON_VERSION=3.12 \
+    --build-arg PYTHON_VERSION=3.13 \
     --build-arg OS_RELEASE=trixie \
     --build-arg CACHEBUST=0 \
     -f ContainerFiles/openstack-venv \
