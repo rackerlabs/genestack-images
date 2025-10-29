@@ -37,7 +37,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        git+https://opendev.org/openstack/freezer-api.git@${OS_VERSION}#egg=freezer-api \
                                        PyMySQL \
                                        python-memcached \
-                                       uwsgi
+                                       uwsgi \
+                                       cryptography
 
 COPY scripts/freezer-cve-patching.sh /opt/
 RUN bash /opt/freezer-cve-patching.sh
