@@ -26,7 +26,7 @@ on:
         type: choice
         options:
           - master
-          - stable/2024.1
+          - unmaintained/2024.1
           - stable/2025.1
       novnc-version:
         description: 'Version of novnc to use'
@@ -49,7 +49,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2024.1", "stable/2025.1"]
+    ["unmaintained/2024.1", "stable/2025.1"]
   novnc_version: >
     ["v1.6.0"]
 
