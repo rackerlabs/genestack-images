@@ -42,10 +42,10 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        PyMySQL \
                                        python-memcached \
                                        uwsgi
-RUN /var/lib/openstack/bin/python -m pip install --upgrade --force-reinstall pip pyOpenSSL==25.3.0
+RUN . /var/lib/openstack/bin/activate && /var/lib/openstack/bin/python -m pip install --upgrade pip pyOpenSSL==25.3.0
 
-COPY scripts/manila-cve-patching.sh /opt/
-RUN bash /opt/manila-cve-patching.sh
+COPY scripts/manila-data-cve-patching.sh /opt/
+RUN bash /opt/manila-data-cve-patching.sh
 
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
@@ -58,20 +58,22 @@ RUN find / -name '*.pyc' -delete \
 FROM python:3.12-slim-bookworm
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
-LABEL org.opencontainers.image.name="manila"
-LABEL org.opencontainers.image.description="OpenStack Service (manila) built for the enterprise."
+LABEL org.opencontainers.image.name="manila-data"
+LABEL org.opencontainers.image.description="OpenStack Service (manila-data) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              bash \
                                              brotli \
+                                             bridge-utils \
                                              bzip2 \
                                              curl \
                                              default-mysql-client \
                                              default-mysql-server \
                                              gettext \
                                              gzip \
+                                             iproute2 \
                                              libblkid1 \
                                              libbz2-1.0 \
                                              libbz2-dev \
@@ -96,6 +98,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              lsb-base \
                                              netbase \
                                              nfs-common \
+                                             openvswitch-switch \
                                              postgresql-client \
                                              pkg-config \
                                              python3-dev \
