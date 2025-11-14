@@ -41,7 +41,12 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["unmaintained/2024.1", "stable/2025.1"]
+    ["master", "unmaintained/2024.1", "stable/2025.1"]
+  # NOTE(zhmarvi): Temporarily require production environments using upstream masakari-monitors 'master' branch to fix two feature issues.
+  #                1. The kubernetes check monitor feature was introduced and merged to be ported to stable/2025.2 tag but we require for
+  #                Genestack versions 2024.1 and 2025.1 as of 11/2025.
+  #                2. There is a feature bug for kubernetes check that is in progress to be approved/merged and most likely
+  #                be introduced in tag versions beyond stable/2025.2.
 
 jobs:
   init:
