@@ -1,0 +1,6 @@
+prometheus_client
+requests
+keystoneauth1
+pyyaml
+openstacksdk
+typing_extensions
