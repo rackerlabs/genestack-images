@@ -2,9 +2,9 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG KUBE_OVN_VERSION=v1.14.4
+ARG KUBE_OVN_VERSION=v1.14.10
 FROM golang:1.25-bookworm AS dependency_build
-ARG KUBE_OVN_VERSION_ENV=v1.14.4
+ARG KUBE_OVN_VERSION_ENV=v1.14.10
 ARG CACHEBUST=0
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
