@@ -1,5 +1,5 @@
 ---
-name: Create and publish a manila image
+name: Create and publish a manila-data image
 
 permissions:
   actions: read
@@ -12,9 +12,9 @@ permissions:
 on:
   pull_request:
     paths:
-      - .github/workflows/container-build-manila.yaml
-      - ContainerFiles/manila
-      - scripts/manila-cve-patching.sh
+      - .github/workflows/container-build-manila-data.yaml
+      - ContainerFiles/manila-data
+      - scripts/manila-data-cve-patching.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
@@ -35,7 +35,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/manila
+  IMAGE_NAME: ${{ github.repository }}/manila-data
   project_version: ${{ github.event.inputs.project-version }}
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
@@ -93,7 +93,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/manila
+          file: ContainerFiles/manila-data
           push: false
           load: true
           cache-from: type=gha
@@ -152,7 +152,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/manila
+          file: ContainerFiles/manila-data
           push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

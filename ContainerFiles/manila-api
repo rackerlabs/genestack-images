@@ -42,10 +42,10 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        PyMySQL \
                                        python-memcached \
                                        uwsgi
-RUN /var/lib/openstack/bin/python -m pip install --upgrade --force-reinstall pip pyOpenSSL==25.3.0
+RUN . /var/lib/openstack/bin/activate && /var/lib/openstack/bin/python -m pip install --upgrade pip pyOpenSSL==25.3.0
 
-COPY scripts/manila-cve-patching.sh /opt/
-RUN bash /opt/manila-cve-patching.sh
+COPY scripts/manila-api-cve-patching.sh /opt/
+RUN bash /opt/manila-api-cve-patching.sh
 
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
@@ -58,8 +58,8 @@ RUN find / -name '*.pyc' -delete \
 FROM python:3.12-slim-bookworm
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
-LABEL org.opencontainers.image.name="manila"
-LABEL org.opencontainers.image.description="OpenStack Service (manila) built for the enterprise."
+LABEL org.opencontainers.image.name="manila-api"
+LABEL org.opencontainers.image.description="OpenStack Service (manila-api) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
@@ -93,15 +93,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libxml2-dev \
                                              libxslt1-dev \
                                              libxslt1.1 \
-                                             lsb-base \
-                                             netbase \
                                              nfs-common \
                                              postgresql-client \
                                              pkg-config \
                                              python3-dev \
                                              squashfs-tools \
                                              ssl-cert \
-                                             ucf \
                                              xmlsec1 \
                                              xz-utils \
                                              zlib1g \
