@@ -117,10 +117,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 manila \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/manila manila \
+  && mkdir -p /var/lib/manila/tmp \
   && mkdir -p /var/lib/openstack/etc/manila \
   && ln -s /var/lib/openstack/etc/manila /etc/manila \
   && chown manila:manila -h /etc/manila \
-  && chown -R manila:manila /var/lib/openstack/etc/manila
+  && chown -R manila:manila /var/lib/openstack/etc/manila \
+  && chown -R manila:manila /var/lib/manila
 # Set the environment variables for the manila venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory

@@ -35,6 +35,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              pkg-config \
                                              python3-dev \
                                              ssl-cert \
+                                             sudo \
                                              xmlsec1
 RUN /usr/local/bin/python -m pip install --upgrade --force-reinstall pip
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
@@ -104,6 +105,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              python3-dev \
                                              squashfs-tools \
                                              ssl-cert \
+                                             sudo \
                                              ucf \
                                              xmlsec1 \
                                              xz-utils \
@@ -120,10 +122,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 manila \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/manila manila \
+  && mkdir -p /var/lib/manila/tmp \
   && mkdir -p /var/lib/openstack/etc/manila \
   && ln -s /var/lib/openstack/etc/manila /etc/manila \
   && chown manila:manila -h /etc/manila \
-  && chown -R manila:manila /var/lib/openstack/etc/manila
+  && chown -R manila:manila /var/lib/openstack/etc/manila \
+  && chown -R manila:manila /var/lib/manila
 # Set the environment variables for the manila venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
