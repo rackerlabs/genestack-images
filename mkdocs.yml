@@ -155,6 +155,10 @@ nav:
       - Libvirt: containers/libvirt.md
       - Magnum: containers/magnum.md
       - Manila: containers/manila.md
+      - Manila API: containers/manila-api.md
+      - Manila Data: containers/manila-data.md
+      - Manila Scheduler: containers/manila-scheduler.md
+      - Manila Share: containers/manila-share.md
       - Masakari: containers/masakari.md
       - Masakari-Monitors: containers/masakari-monitors.md
       - Neutron: containers/neutron.md
