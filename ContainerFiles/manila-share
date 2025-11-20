@@ -12,9 +12,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              bash \
+                                             bridge-utils \
                                              brotli \
                                              build-essential \
-                                             bridge-utils \
                                              cargo \
                                              curl \
                                              default-mysql-client \
@@ -36,11 +36,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libxslt1.1 \
                                              nfs-kernel-server \
                                              openvswitch-switch \
-                                             postgresql-client \
                                              pkg-config \
+                                             postgresql-client \
                                              python3-dev \
-                                             sudo \
                                              ssl-cert \
+                                             sudo \
                                              xmlsec1
 RUN /usr/local/bin/python -m pip install --upgrade --force-reinstall pip
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
@@ -72,8 +72,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              bash \
-                                             brotli \
                                              bridge-utils \
+                                             brotli \
                                              bzip2 \
                                              curl \
                                              default-mysql-client \
@@ -84,14 +84,14 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libblkid1 \
                                              libbz2-1.0 \
                                              libbz2-dev \
-                                             libcap2 \
                                              libc6 \
+                                             libcap2 \
                                              libffi-dev \
                                              libgcc-s1 \
                                              libldap2-dev \
                                              liblz4-1 \
-                                             liblzma5 \
                                              liblzma-dev \
+                                             liblzma5 \
                                              libpq-dev \
                                              libsasl2-dev \
                                              libssl-dev \
@@ -107,12 +107,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              nfs-common \
                                              nfs-kernel-server \
                                              openvswitch-switch \
-                                             postgresql-client \
                                              pkg-config \
+                                             postgresql-client \
                                              python3-dev \
                                              squashfs-tools \
-                                             sudo \
                                              ssl-cert \
+                                             sudo \
                                              ucf \
                                              xmlsec1 \
                                              xz-utils \
