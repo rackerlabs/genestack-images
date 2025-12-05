@@ -34,7 +34,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libvirt-dev
 
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/masakari-monitors.git@${OS_VERSION}#egg=masakari-monitors \
+                                       ## TEMP FIX UNTIL BUG FIX UPSTREAM RESOVLED https://review.opendev.org/c/openstack/masakari-monitors/+/951336
+                                       #git+https://opendev.org/openstack/masakari-monitors.git@${OS_VERSION}#egg=masakari-monitors \
+                                       git+https://github.com/rackerlabs/masakari-monitors.git@kubernetes_check_status#egg=masakari-monitors \
                                        PyJWT \
                                        libvirt-python
 
