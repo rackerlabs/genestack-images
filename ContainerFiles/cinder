@@ -41,6 +41,8 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        PyMySQL \
                                        python-memcached \
                                        os-brick \
+                                       purestorage \
+                                       py-pure-client \
                                        uwsgi
 
 COPY scripts/cinder-cve-patching.sh /opt/
