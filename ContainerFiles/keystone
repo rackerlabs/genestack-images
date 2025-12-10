@@ -41,6 +41,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        ldappool \
                                        pyngus \
                                        python-memcached \
+                                       python-openstackclient \
                                        PyMySQL
 COPY scripts/keystone-cve-patching.sh /opt/
 RUN bash /opt/keystone-cve-patching.sh
