@@ -25,7 +25,11 @@ COPY --from=dependency_build /lib/x86_64-linux-gnu/libnuma* /lib/x86_64-linux-gn
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libssl* /lib/x86_64-linux-gnu/
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libxdp* /lib/x86_64-linux-gnu/
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libz* /lib/x86_64-linux-gnu/
-RUN export DEBIAN_FRONTEND=noninteractive \
+RUN mkdir -p /etc/udev/rules.d \
+  && groupadd --gid 929292 kvm || groupmod --gid 929292 kvm \
+  && getent group kvm \
+  && echo 'KERNEL=="kvm", GROUP="929292", MODE="0660"' | tee /etc/udev/rules.d/99-genestack-kvm.rules \
+  && export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y iproute2 \
                                                 iptables \
@@ -57,4 +61,3 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && mkdir -p /etc/nova /var/log/nova /var/cache/nova \
   && chown nova:nova /etc/nova /var/log/nova /var/lib/nova /var/cache/nova \
   && usermod -a -G kvm nova
-
