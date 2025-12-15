@@ -168,6 +168,7 @@ RUNTIME_PACKAGES="
   init-system-helpers
   iproute2
   libacl1
+  libapparmor1
   libapt-pkg7.0
   libattr1
   libaudit-common
@@ -233,6 +234,7 @@ RUNTIME_PACKAGES="
   libss2
   libssl-dev
   libssl3
+  libssl3t64
   libstdc++6
   libsystemd-dev
   libsystemd0
@@ -278,7 +280,7 @@ RUNTIME_PACKAGES="
   sensible-utils
   squashfs-tools
   ssl-cert
-  sudo
+  sudo-ldap
   sysvinit-utils
   tar
   ucf
