@@ -38,7 +38,7 @@ env:
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: i-hate-ceph
     outputs:
       ceph-version: ${{ steps.generate-matrix.outputs.ceph_version }}
     steps:
@@ -58,7 +58,7 @@ jobs:
     outputs:
       MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
       MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
-    runs-on: ubuntu-latest
+    runs-on: i-hate-ceph
     steps:
       - name: Cleanup disk space
         run: |
