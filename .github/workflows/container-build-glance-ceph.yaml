@@ -1,0 +1,164 @@
+---
+name: Create and publish a Glance image with Ceph support
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  packages: write
+  pull-requests: write
+  security-events: write
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/container-build-glance-ceph.yaml
+      - ContainerFiles/glance-ceph
+      - scripts/glance-cve-patching.sh
+  schedule:
+    - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
+  workflow_dispatch:
+    inputs:
+      openstack-constraints:
+        description: 'Version of OpenStack Constraints to use'
+        required: true
+        default: "master"
+        type: choice
+        options:
+          - master
+          - unmaintained/2024.1
+          - stable/2025.1
+      project-version:
+        description: 'Version of OpenStack Glance to build, defaults to openstack-constraints if unspecified'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/glance-ceph
+  project_version: ${{ github.event.inputs.project-version }}
+  # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
+  #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
+  #                   workaround until there's a better way to handle this.
+  openstack_constraints: >
+    ["unmaintained/2024.1", "stable/2025.1"]
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
+    steps:
+      - name: generate-matrix
+        id: generate-matrix
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
+            openstack_constraints="$(echo '${{ github.event.inputs.openstack-constraints }}' | jq -R '[select(length>0)]' | jq -c '.')"
+          fi
+          echo "openstack_constraints=${openstack_constraints:-${{ env.openstack_constraints }}}" >> $GITHUB_OUTPUT
+  build-and-push-image:
+    needs:
+      - init
+    strategy:
+      matrix:
+        openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Dynamically set MY_DATE environment variable
+        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Dynamically set OS_VERSION_PARSE environment variable
+        run: |
+          VERSION=$(echo -n "${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
+          echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
+          NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
+          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ContainerFiles/glance-ceph
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.IMAGE_NAME }}:local
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
+            OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            CACHEBUST=${{ github.sha }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:local'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        continue-on-error: true
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: "${{ env.CATEGORY_NAME }}"
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          image-ref: '${{ env.IMAGE_NAME }}:local'
+          output: trivy.txt
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+      - name: Create trivy output file in markdown format
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ -s trivy.txt ]]; then
+              echo "### Security Output" > trivy-output.txt
+              echo '```terraform' >> trivy-output.txt
+              cat trivy.txt >> trivy-output.txt
+              echo '```' >> trivy-output.txt
+          fi
+      - name: Publish Trivy Output to Summary
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [[ -s trivy-output.txt ]]; then
+            {
+              cat trivy-output.txt
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ContainerFiles/glance-ceph
+          push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
+            OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            CACHEBUST=${{ github.sha }}
