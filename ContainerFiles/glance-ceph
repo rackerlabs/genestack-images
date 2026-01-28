@@ -60,6 +60,8 @@ LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="glance"
 LABEL org.opencontainers.image.description="OpenStack Service (glance) w/ Ceph support built for the enterprise."
+COPY --from=dependency_build /usr/local/lib /usr/local/lib
+COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
