@@ -42,6 +42,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        graphviz \
                                        netaddr \
                                        python-memcached \
+                                       networking-baremetal \
                                        uwsgi
 
 COPY scripts/neutron-cve-patching.sh /opt/
