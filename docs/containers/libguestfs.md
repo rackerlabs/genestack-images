@@ -23,7 +23,7 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| VENV_TAG | 3.12-latest |
+| VENV_TAG | 3.13-trixie-latest |
 | GUESTFS_VERSION | master |
 | GUESTFS_HIVEX_VERSION | master |
 
@@ -31,7 +31,7 @@ graph LR
 
     ``` bash
     docker build \
-    --build-arg VENV_TAG=3.12-latest \
+    --build-arg VENV_TAG=3.13-trixie-latest \
     --build-arg GUESTFS_VERSION=master \
     --build-arg GUESTFS_HIVEX_VERSION=master \
     -f ContainerFiles/libguestfs \

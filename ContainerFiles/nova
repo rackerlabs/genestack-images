@@ -2,11 +2,15 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG BUILT_TAG=v1.56.1-latest
-FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG} AS dependency_build
+ARG LIBGUESTFS_TAG=v1.56.2-latest
+ARG CEPH_CLIENT_TAG=3.13-trixie-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/libguestfs:${LIBGUESTFS_TAG} AS dependency_build
+ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG NOVNC_VERSION=master
+
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -37,6 +41,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              python3-dev \
                                              ssl-cert \
                                              xmlsec1
+
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
                                        git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
@@ -62,12 +67,15 @@ RUN find / -name '*.pyc' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
   && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
 
-
-FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG}
+ARG OS_VERSION=master
+ARG CEPH_CLIENT_TAG=3.13-trixie-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/ceph-client:${CEPH_CLIENT_TAG}
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="nova"
 LABEL org.opencontainers.image.description="OpenStack Service (nova) built for the enterprise."
+
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 COPY --from=dependency_build /usr/share/novnc /usr/share/novnc
 RUN export DEBIAN_FRONTEND=noninteractive \
@@ -106,6 +114,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s /var/lib/openstack/etc/nova /etc/nova \
   && chown nova:nova -h /etc/nova \
   && chown -R nova:nova /var/lib/openstack/etc/nova
+
 # Set the environment variables for the nova venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory

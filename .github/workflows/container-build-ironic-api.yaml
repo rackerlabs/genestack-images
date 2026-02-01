@@ -42,26 +42,40 @@ env:
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
     ["unmaintained/2024.1", "stable/2025.1"]
+  venv_tag: >
+    ['3.13-trixie-latest','3.12-bookworm-latest']
 
 jobs:
   init:
     runs-on: ubuntu-latest
     outputs:
       openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
+      venv-tag: ${{ steps.generate-matrix.outputs.venv_tag }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             openstack_constraints="$(echo '${{ github.event.inputs.openstack-constraints }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            venv_tag="['3.13-trixie-latest']"
+            if [ "${{ github.event.inputs.openstack-constraints }}" == "unmaintained/2024.1" ]; then
+              venv_tag="['3.12-bookworm-latest']"
+            fi
           fi
           echo "openstack_constraints=${openstack_constraints:-${{ env.openstack_constraints }}}" >> $GITHUB_OUTPUT
+          echo "venv_tag=${venv_tag:-${{ env.venv_tag }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
-        openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
+        openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints) }}
+        venv-tag: ${{ fromJSON(needs.init.outputs.venv-tag) }}
+        exclude:
+          - openstack-constraints: unmaintained/2024.1
+            venv-tag: 3.13-trixie-latest
+          - openstack-constraints: stable/2025.1
+            venv-tag: 3.12-bookworm-latest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -89,6 +103,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -105,6 +122,9 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            VENV_TAG=${{ matrix.venv-tag }}
+            PYTHON_CONTAINER=${{ case(matrix.venv-tag == '3.13-trixie-latest','python:3.13-slim-trixie','python:3.12-slim-bookworm') }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -162,3 +182,6 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.REGISTRY }}/${{ github.repository }}
+            VENV_TAG=${{ matrix.venv-tag }}
+            PYTHON_CONTAINER=${{ case(matrix.venv-tag == '3.13-trixie-latest','python:3.13-slim-trixie','python:3.12-slim-bookworm') }}

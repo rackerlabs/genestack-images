@@ -41,27 +41,42 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["unmaintained/2024.1", "stable/2025.1"]
+    ['unmaintained/2024.1','stable/2025.1']
+  ceph_client_tags: >
+    ['squid-3.12-bookworm','squid-3.13-trixie']
 
 jobs:
   init:
     runs-on: ubuntu-latest
     outputs:
       openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
+      ceph-client-tags: ${{ steps.generate-matrix.outputs.ceph_client_tags }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             openstack_constraints="$(echo '${{ github.event.inputs.openstack-constraints }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            if [ "${{ github.event.inputs.openstack-constraints }}" == "unmaintained/2024.1" ]; then
+              ceph_client_tags="['squid-3.12-bookworm']"
+            else
+              ceph_client_tags="['squid-3.13-trixie']"
+            fi
           fi
           echo "openstack_constraints=${openstack_constraints:-${{ env.openstack_constraints }}}" >> $GITHUB_OUTPUT
+          echo "ceph_client_tags=${ceph_client_tags:-${{ env.ceph_client_tags }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
         openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
+        ceph-client-tags: ${{ fromJSON(needs.init.outputs.ceph-client-tags) }}
+        exclude:
+          - openstack-constraints: unmaintained/2024.1
+            ceph-client-tags: squid-3.13-trixie
+          - openstack-constraints: stable/2025.1
+            ceph-client-tags: squid-3.12-bookworm
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -89,6 +104,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -105,6 +123,8 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            CEPH_CLIENT_TAG=${{ matrix.ceph-client-tags }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -162,3 +182,5 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            CEPH_CLIENT_TAG=${{ matrix.ceph-client-tags }}

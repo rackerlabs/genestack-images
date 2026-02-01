@@ -135,7 +135,7 @@ nav:
       - Apache: containers/apache.md
       - Barbican: containers/barbican.md
       - Blazar: containers/blazar.md
-      - Ceph Libs: containers/ceph-libs.md
+      - Ceph Client: containers/ceph-client.md
       - Designate: containers/designate.md
       - Cinder: containers/cinder.md
       - Cloudkitty: containers/cloudkitty.md

@@ -17,15 +17,62 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
+    inputs:
+      os-release:
+        description: 'Version of debian image to use'
+        required: true
+        default: "trixie"
+        type: choice
+        options:
+          - "trixie"
+          - "bookworm"
+      python-version:
+        description: 'Version of python to use'
+        required: true
+        default: "3.13"
+        type: choice
+        options:
+          - "3.13"
+          - "3.12"
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/openstack-venv
-  PYTHON_VERSION: 3.12
   CATEGORY_NAME: openstack-venv
+  os_release: >
+    ['trixie','bookworm']
+  python_version: >
+    ['3.13','3.12']
 
 jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      os-release: ${{ steps.generate-matrix.outputs.os_release }}
+      python-version: ${{ steps.generate-matrix.outputs.python_version }}
+    steps:
+      - name: generate-matrix
+        id: generate-matrix
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
+            os_release="$(echo '${{ github.event.inputs.os-release }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            python_version="$(echo '${{ github.event.inputs.python-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
+          fi
+          echo "os_release=${os_release:-${{ env.os_release }}}" >> $GITHUB_OUTPUT
+          echo "python_version=${python_version:-${{ env.python_version }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
+    needs:
+      - init
+    strategy:
+      matrix:
+        os-release: ${{ fromJSON(needs.init.outputs.os-release) }}
+        python-version: ${{ fromJSON(needs.init.outputs.python-version) }}
+        exclude:
+          - os-release: trixie
+            python-version: 3.12
+          - os-release: bookworm
+            python-version: 3.13
+
     outputs:
       MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
       MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
@@ -50,6 +97,9 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Dynamically set MY_DATE environment variable
         run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -60,16 +110,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.IMAGE_NAME }}:local
+            ${{ env.IMAGE_NAME }}:${{ matrix.python-version }}-${{ matrix.os-release }}-local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            PYTHON_VERSION=${{ matrix.python-version }}
+            OS_RELEASE=${{ matrix.os-release }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         with:
-          image-ref: '${{ env.IMAGE_NAME }}:local'
+          image-ref: '${{ env.IMAGE_NAME }}:${{ matrix.python-version }}-${{ matrix.os-release }}-local'
           format: 'sarif'
           output: 'trivy-results.sarif'
           ignore-unfixed: true
@@ -85,7 +137,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          image-ref: '${{ env.IMAGE_NAME }}:local'
+          image-ref: '${{ env.IMAGE_NAME }}:${{ matrix.python-version }}-${{ matrix.os-release }}-local'
           output: trivy.txt
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
@@ -106,6 +158,9 @@ jobs:
               cat trivy-output.txt
             } >> $GITHUB_STEP_SUMMARY
           fi
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=https://${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -115,9 +170,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PYTHON_VERSION }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PYTHON_VERSION }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.python-version }}-${{ matrix.os-release }}-latest
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            PYTHON_VERSION=${{ matrix.python-version }}
+            OS_RELEASE=${{ matrix.os-release }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}

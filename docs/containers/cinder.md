@@ -23,19 +23,21 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| VENV_TAG | 3.12-latest |
+| VENV_TAG | 3.13-trixie-latest |
 | CACHEBUST | 0 |
 | OS_VERSION | master |
 | OS_CONSTRAINTS | master |
+| CEPH_CLIENT_TAG | squid-3.13-trixie |
 
 ??? example "Build Command"
 
     ``` bash
     docker build \
-    --build-arg VENV_TAG=3.12-latest \
+    --build-arg VENV_TAG=3.13-trixie-latest \
     --build-arg CACHEBUST=0 \
     --build-arg OS_VERSION=master \
     --build-arg OS_CONSTRAINTS=master \
+    --build-arg CEPH_CLIENT_TAG=squid-3.13-trixie \
     -f ContainerFiles/cinder \
     -t cinder:local \
     .

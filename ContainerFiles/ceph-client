@@ -1,0 +1,66 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG PYTHON_VERSION=3.13
+ARG OS_RELEASE=trixie
+ARG VENV_TAG=${PYTHON_VERSION}-${OS_RELEASE}-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
+WORKDIR /opt
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt update && apt-get upgrade -y \
+  && apt install --no-install-recommends -y \
+                                            ca-certificates \
+                                            lsb-release \
+                                            curl \
+                                            libxml2 \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG VENV_TAG=3.13-trixie-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/openstack-venv:${VENV_TAG}
+ARG CEPH_VERSION=squid
+ENV CEPH_VERSION=${CEPH_VERSION}
+ARG CEPH_REPO=pve
+ENV CEPH_REPO=${CEPH_REPO}
+ARG OS_RELEASE=trixie
+ENV OS_RELEASE=${OS_RELEASE}
+
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="ceph-client"
+LABEL org.opencontainers.image.description="Ceph client packages built for the enterprise."
+
+COPY --from=dependency_build /usr/local /usr/local
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+
+
+COPY scripts/ceph-repo.sh /opt/
+RUN bash /opt/ceph-repo.sh
+
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get update && apt-get install --no-install-recommends -y \
+                                            ceph-common \
+                                            python3-ceph \
+                                            python3-ceph-common \
+                                            python3-cephfs \
+                                            python3-rados \
+                                            python3-rbd \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import rados; print(rados.__file__)'` \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import rbd; print(rbd.__file__)'` \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import cephfs; print(cephfs.__file__)'` \
+  && cd `/var/lib/openstack/bin/python -c 'import site;print(site.getsitepackages()[0])'` && ln -sf `/usr/bin/python3 -c 'import ceph_argparse; print(ceph_argparse.__file__)'` \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* /opt/ceph-repo.sh \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete
+
+ENV PATH="/usr/local/bin:/usr/local/sbin:/var/lib/openstack/bin:$PATH"
+WORKDIR /var/lib/openstack

@@ -23,14 +23,16 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| VENV_TAG | 3.12-latest |
+| VENV_TAG | 3.13-trixie-latest |
+| PYTHON_CONTAINER | python:3.13-slim-trixie |
 | OVS_VERSION | main |
 
 ??? example "Build Command"
 
     ``` bash
     docker build \
-    --build-arg VENV_TAG=3.12-latest \
+    --build-arg VENV_TAG=3.13-trixie-latest \
+    --build-arg PYTHON_CONTAINER=python:3.13-slim-trixie \
     --build-arg OVS_VERSION=main \
     -f ContainerFiles/ovs \
     -t ovs:local \

@@ -23,19 +23,21 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| BUILT_TAG | v1.56.1-latest |
+| BUILT_TAG | v1.56.2-latest |
 | OS_VERSION | master |
 | OS_CONSTRAINTS | master |
 | NOVNC_VERSION | master |
+| CEPH_CLIENT_TAG | squid-3.13-trixie  |
 
 ??? example "Build Command"
 
     ``` bash
     docker build \
-    --build-arg BUILT_TAG=v1.56.1-latest \
+    --build-arg BUILT_TAG=v1.56.2-latest \
     --build-arg OS_VERSION=master \
     --build-arg OS_CONSTRAINTS=master \
     --build-arg NOVNC_VERSION=master \
+    --build-arg CEPH_CLIENT_TAG=squid-3.13-trixie \
     -f ContainerFiles/nova \
     -t nova:local \
     .

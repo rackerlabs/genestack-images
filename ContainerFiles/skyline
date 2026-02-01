@@ -1,9 +1,12 @@
 # syntax = docker/dockerfile:1
 # This Dockerfile builds Skyline from the RackerLabs fork.
 
-ARG VENV_TAG=3.12-latest
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG VENV_TAG=3.13-trixie-latest
+ARG PYTHON_CONTAINER=python:3.13-slim-trixie
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
+ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
@@ -21,8 +24,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
       curl \
       locales-all \
       ssl-cert
-RUN git clone https://github.com/rackerlabs/skyline-apiserver /opt/skyline-apiserver
-RUN git clone https://github.com/rackerlabs/skyline-console /opt/skyline-console
+RUN git clone --branch ${OS_VERSION} https://github.com/rackerlabs/skyline-apiserver /opt/skyline-apiserver
+RUN git clone --branch ${OS_VERSION} https://github.com/rackerlabs/skyline-console /opt/skyline-console
 RUN mkdir /opt/skyline-apiserver/skyline_console
 RUN tar -czvf /opt/skyline-apiserver/skyline_console/skyline_console.tar.gz -C /opt/skyline-console .
 RUN /var/lib/openstack/bin/pip install -U /opt/skyline-apiserver/skyline_console/skyline_console.tar.gz
@@ -39,7 +42,7 @@ RUN find / -name '*.pyc' -delete \
     && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/*.dist-info/METADATA
 
 
-FROM python:3.12-slim-bookworm
+FROM ${PYTHON_CONTAINER}
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="skyline"

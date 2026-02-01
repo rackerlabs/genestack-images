@@ -23,14 +23,16 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| BUILT_TAG | v3.5.1-latest |
+| OVS_TAG | v3.5.2-3.13-trixie-latest |
+| LIBGUESTFS_TAG | v1.56.2-3.13-trixie-latest |
 | CACHEBUST | 0 |
 
 ??? example "Build Command"
 
     ``` bash
     docker build
-    --build-arg BUILT_TAG=v3.5.1-latest \
+    --build-arg OVS_TAG=v3.5.2-3.13-trixie-latest \
+    --build-arg LIBGUESTFS_TAG=v1.56.2-3.13-trixie-latest \
     --build-arg CACHEBUST=0 \
     -f ContainerFiles/libvirt \
     -t libvirt:local \
