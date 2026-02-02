@@ -36,7 +36,9 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        PyMySQL \
                                        python-memcached \
                                        sushy \
-                                       proliantutils>=2.8.0 \
+                                       "proliantutils>=2.8.0" \
+                                       python-hpilo \
+                                       python-ilorest-library \
                                        uwsgi
 
 COPY scripts/ironic-cve-patching.sh /opt/
