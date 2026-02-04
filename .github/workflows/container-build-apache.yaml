@@ -35,25 +35,32 @@ env:
   #                  workaround until there's a better way to handle this.
   mod_wsgi: >
     ["5.0.2"]
+  venv_tag: >
+    ['3.13-trixie-latest','3.12-bookworm-latest']
+
 jobs:
   init:
     runs-on: ubuntu-latest
     outputs:
       apache-mod-wsgi-version: ${{ steps.generate-matrix.outputs.mod_wsgi }}
+      venv-tag: ${{ steps.generate-matrix.outputs.venv_tag }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             mod_wsgi="$(echo '${{ github.event.inputs.apache-mod-wsgi-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            venv_tag="['3.13-trixie-latest']"
           fi
           echo "mod_wsgi=${mod_wsgi:-${{ env.mod_wsgi }}}" >> $GITHUB_OUTPUT
+          echo "venv_tag=${venv_tag:-${{ env.venv_tag }}}" >> $GITHUB_OUTPUT
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
         apache-mod-wsgi-version: ${{ fromJSON(needs.init.outputs.apache-mod-wsgi-version) }}
+        venv-tag: ${{ fromJSON(needs.init.outputs.venv-tag) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -81,6 +88,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -96,6 +106,9 @@ jobs:
           build-args: |
             MOD_WSGI_VERSION=${{ matrix.apache-mod-wsgi-version }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            VENV_TAG=${{ matrix.venv-tag }}
+            PYTHON_CONTAINER=${{ case(matrix.venv-tag == '3.13-trixie-latest','python:3.13-slim-trixie','python:3.12-slim-bookworm') }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -146,9 +159,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.apache-mod-wsgi-version }}-${{ matrix.venv-tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.apache-mod-wsgi-version }}-${{ matrix.venv-tag }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.venv-tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.venv-tag }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             MOD_WSGI_VERSION=${{ matrix.apache-mod-wsgi-version }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            VENV_TAG=${{ matrix.venv-tag }}
+            PYTHON_CONTAINER=${{ case(matrix.venv-tag == '3.13-trixie-latest','python:3.13-slim-trixie','python:3.12-slim-bookworm') }}

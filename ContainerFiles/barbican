@@ -2,8 +2,10 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG VENV_TAG=3.13-trixie-latest
+ARG PYTHON_CONTAINER=python:3.13-slim-trixie
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
@@ -52,7 +54,7 @@ RUN find / -name '*.pyc' -delete \
   && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
 
 
-FROM python:3.12-slim-bookworm
+FROM ${PYTHON_CONTAINER}
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="barbican"

@@ -3,7 +3,7 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 ARG KUBE_OVN_VERSION=v1.14.10
-FROM golang:1.25-bookworm AS dependency_build
+FROM golang:1.25-trixie AS dependency_build
 ARG KUBE_OVN_VERSION_ENV=v1.14.10
 ARG CACHEBUST=0
 RUN export DEBIAN_FRONTEND=noninteractive \

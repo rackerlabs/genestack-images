@@ -3,7 +3,8 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 ARG BUILT_TAG=v3.5.1-latest
-FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/ovs:${BUILT_TAG} AS dependency_build
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG RXT_VERSION=master
@@ -57,7 +58,8 @@ RUN find / -name '*.pyc' -delete \
   && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
 
 
-FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG}
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/ovs:${BUILT_TAG}
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="neutron"

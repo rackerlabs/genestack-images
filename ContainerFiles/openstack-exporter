@@ -2,9 +2,9 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
-
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG VENV_TAG=3.13-trixie-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/openstack-venv:${VENV_TAG} AS dependency_build
 WORKDIR /app
 COPY scripts/openstack-exporter-app/requirements.txt .
 
@@ -13,7 +13,7 @@ RUN find / -name '*.pyc' -delete \
     && find / -name '*.pyo' -delete \
     && find / -name '__pycache__' -delete
 
-FROM python:3.12-slim-bookworm
+FROM python:3.13-slim-trixie
 LABEL maintainer="Rackspace"
 LABEL org.opencontainers.image.name="openstack-exporter"
 LABEL org.opencontainers.image.description="OpenStack Exporter for Prometheus"

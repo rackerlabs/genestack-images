@@ -17,17 +17,59 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
-
+    inputs:
+      ovs-tag:
+        description: 'Version of ovs to merge into image'
+        required: true
+        default: "v3.5.2-3.13-trixie-latest"
+        type: choice
+        options:
+          - v3.5.2-3.13-trixie-latest
+          - v3.5.2-3.12-bookworm-latest
+      libguestfs-tag:
+        description: 'Version of libguestfs to merge into image'
+        required: true
+        default: "v1.56.2-3.13-trixie-latest"
+        type: choice
+        options:
+          - v1.56.2-3.13-trixie-latest
+          - v1.56.2-3.12-bookworm-latest
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/libvirt
-  CATEGORY_NAME: libvirt
-
+  ovs_tag: >
+    ['v3.5.2-3.13-trixie-latest','v3.5.2-3.12-bookworm-latest']
+  libguestfs_tag: >
+    ['v1.56.2-3.13-trixie-latest','v1.56.2-3.12-bookworm-latest']
 jobs:
-  build-and-push-image:
+  init:
+    runs-on: ubuntu-latest
     outputs:
-      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
-      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
+      ovs-tag: ${{ steps.generate-matrix.outputs.ovs_tag }}
+      libguestfs-tag: ${{ steps.generate-matrix.outputs.libguestfs_tag }}
+    steps:
+      - name: generate-matrix
+        id: generate-matrix
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
+            ovs_tag="$(echo '${{ github.event.inputs.ovs-tag }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            libguestfs_tag="$(echo '${{ github.event.inputs.libguestfs-tag }}' | jq -R '[select(length>0)]' | jq -c '.')"
+          fi
+          echo "ovs_tag=${ovs_tag:-${{ env.ovs_tag }}}" >> $GITHUB_OUTPUT
+          echo "libguestfs_tag=${libguestfs_tag:-${{ env.libguestfs_tag }}}" >> $GITHUB_OUTPUT
+
+  build-and-push-image:
+    needs:
+      - init
+    strategy:
+      matrix:
+        ovs-tag: ${{ fromJSON(needs.init.outputs.ovs-tag) }}
+        libguestfs-tag: ${{ fromJSON(needs.init.outputs.libguestfs-tag) }}
+        exclude:
+          - ovs-tag: v3.5.2-3.13-trixie-latest
+            libguestfs-tag: v1.56.2-3.12-bookworm-latest
+          - ovs-tag: v3.5.2-3.12-bookworm-latest
+            libguestfs-tag: v1.56.2-3.13-trixie-latest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -42,11 +84,20 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Dynamically set MY_DATE, NAME environment variable
+        run: |
+          echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+
+          NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
+          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Dynamically set MY_DATE environment variable
         run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
       - name: Build and push Docker image
@@ -63,6 +114,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            OVS_TAG=${{ matrix.ovs-tag }}
+            LIBGUESTFS_TAG=${{ matrix.libguestfs-tag }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -113,8 +167,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.libguestfs-tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}-${{ matrix.libguestfs-tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            OVS_TAG=${{ matrix.ovs-tag }}
+            LIBGUESTFS_TAG=${{ matrix.libguestfs-tag }}

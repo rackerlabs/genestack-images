@@ -2,11 +2,18 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CEPH_CLIENT_TAG=3.13-trixie-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/ceph-client:${CEPH_CLIENT_TAG}
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="glance"
+LABEL org.opencontainers.image.description="OpenStack Service (glance) built for the enterprise."
+
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -30,7 +37,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libxslt1.1 \
                                              pkg-config \
                                              ssl-cert \
-                                             xmlsec1
+                                             xmlsec1 \
+                                             libxml2
+
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/glance.git@${OS_VERSION}#egg=glance \
                                        PyMySQL \
@@ -52,18 +61,7 @@ RUN find / -name '*.pyc' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
-  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
-
-
-FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
-LABEL org.opencontainers.image.name="glance"
-LABEL org.opencontainers.image.description="OpenStack Service (glance) built for the enterprise."
-COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
@@ -76,6 +74,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s /var/lib/openstack/etc/glance /etc/glance \
   && chown glance:glance -h /etc/glance \
   && chown -R glance:glance /var/lib/openstack/etc/glance
+
 # Set the environment variables for the glance venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory

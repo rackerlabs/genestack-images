@@ -22,7 +22,7 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| VENV_TAG | 3.12-latest |
+| VENV_TAG | 3.13-trixie-latest |
 | CACHEBUST | 0 |
 | OS_CONSTRAINTS | master |
 
@@ -30,7 +30,7 @@ graph LR
 
     ``` bash
     docker build \
-    --build-arg VENV_TAG=3.12-latest \
+    --build-arg VENV_TAG=3.13-trixie-latest \
     --build-arg CACHEBUST=0 \
     -f ContainerFiles/openstack-client \
     -t openstack-client:local \

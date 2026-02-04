@@ -2,11 +2,18 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG VENV_TAG=3.12-latest
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CEPH_CLIENT_TAG=3.13-trixie-latest
+ARG GHCR_URL=ghcr.io/rackerlabs/genestack-images
+FROM ${GHCR_URL}/ceph-client:${CEPH_CLIENT_TAG}
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="cinder"
+LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for the enterprise."
+
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -33,7 +40,17 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libxslt1-dev \
                                              pkg-config \
                                              ssl-cert \
-                                             xmlsec1
+                                             xmlsec1 \
+                                             libxml2 \
+                                             multipath-tools \
+                                             open-iscsi \
+                                             qemu-block-extra \
+                                             qemu-utils \
+                                             lsscsi \
+                                             nvme-cli \
+                                             sudo \
+                                             nfs-common
+
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/cinder.git@${OS_VERSION}#egg=cinder \
                                        cryptography \
@@ -54,24 +71,10 @@ RUN find / -name '*.pyc' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
-  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
-
-
-FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
-LABEL org.opencontainers.image.name="cinder"
-LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for the enterprise."
-COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils systemctl lsscsi nvme-cli sudo nfs-common \
+  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
-  && find / -name '*.pyc' -delete \
-  && find / -name '*.pyo' -delete \
-  && find / -name '__pycache__' -delete \
   && groupadd --system --gid 42424 cinder \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/cinder cinder \
   && mkdir -p /var/lib/openstack/etc/cinder \
@@ -80,6 +83,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown cinder:cinder -h /etc/cinder \
   && chown -R cinder:cinder /var/lib/openstack/etc/cinder \
                             /var/lib/cinder/mnt
+
 # Set the environment variables for the cinder venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory

@@ -1,5 +1,5 @@
 ---
-name: Create and publish a ceph-libs image
+name: Create and publish a ceph-client image
 
 permissions:
   actions: read
@@ -13,52 +13,87 @@ on:
   pull_request:
     paths:
       - .github/workflows/container-build-ceph.yaml
-      - ContainerFiles/ceph-libs
+      - ContainerFiles/ceph-client
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
     inputs:
-      ceph-version:
-        description: 'Version of Ceph to use'
+      ceph-repo:
+        description: 'Use distro or pve (Proxmox) repo'
         required: true
-        default: "v19.2.2"
+        default: "pve"
         type: choice
         options:
-          - "v19.2.2"
-
+          - "pve"
+          - "distro"
+      ceph-release:
+        description: 'Release of ceph to use'
+        required: true
+        default: "squid"
+        type: choice
+        options:
+          - "squid"
+          - "distro"
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/ceph-libs
-  CATEGORY_NAME: ceph-libs
+  IMAGE_NAME: ${{ github.repository }}/ceph-client
+  CATEGORY_NAME: ceph-client
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
-  ceph_version: >
-    ["v19.2.2"]
+  os_release: >
+    ['trixie','bookworm']
+  python_version: >
+    ['3.13','3.12']
+  ceph_repo: >
+    ['pve']
+  ceph_release: >
+    ['squid']
 
 jobs:
   init:
-    runs-on: i-hate-ceph
+    runs-on: ubuntu-latest
     outputs:
-      ceph-version: ${{ steps.generate-matrix.outputs.ceph_version }}
+      os-release: ${{ steps.generate-matrix.outputs.os_release }}
+      python-version: ${{ steps.generate-matrix.outputs.python_version }}
+      ceph-repo: ${{ steps.generate-matrix.outputs.ceph_repo }}
+      ceph-release: ${{ steps.generate-matrix.outputs.ceph_release }}
     steps:
       - name: generate-matrix
         id: generate-matrix
         run: |
+          echo "os_release=${{ env.os_release }}" >> $GITHUB_OUTPUT
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
-            ceph_version="$(echo '${{ github.event.inputs.ceph-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            ceph_repo="$(echo '${{ github.event.inputs.ceph-repo }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            ceph_release="$(echo '${{ github.event.inputs.ceph-release }}' | jq -R '[select(length>0)]' | jq -c '.')"
+            python_version="['3.13']"
           fi
-          echo "ceph_version=${ceph_version:-${{ env.ceph_version }}}" >> $GITHUB_OUTPUT
+          echo "ceph_repo=${ceph_repo:-${{ env.ceph_repo }}}" >> $GITHUB_OUTPUT
+          echo "ceph_release=${ceph_release:-${{ env.ceph_release }}}" >> $GITHUB_OUTPUT
+          echo "python_version=${python_version:-${{ env.python_version }}}" >> $GITHUB_OUTPUT
+
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
-        ceph-libs-version: ${{ fromJSON(needs.init.outputs.ceph-version) }}
+        os-release: ${{ fromJSON(needs.init.outputs.os-release) }}
+        python-version: ${{ fromJSON(needs.init.outputs.python-version) }}
+        ceph-repo: ${{ fromJSON(needs.init.outputs.ceph-repo) }}
+        ceph-release: ${{ fromJSON(needs.init.outputs.ceph-release) }}
+        exclude:
+          - os-release: trixie
+            python-version: 3.12
+            ceph-repo: pve
+            ceph-release: squid
+          - os-release: bookworm
+            python-version: 3.13
+            ceph-repo: pve
+            ceph-release: squid
     outputs:
       MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
       MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
-    runs-on: i-hate-ceph
+    runs-on: ubuntu-latest
     steps:
       - name: Cleanup disk space
         run: |
@@ -92,21 +127,29 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Dynamically set MY_DATE environment variable
         run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Set registry URL
+        run: |
+          echo "GHCR_URL=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/ceph-libs
+          file: ContainerFiles/ceph-client
           push: false
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
             ${{ env.IMAGE_NAME }}:local
+            ${{ matrix.python-version }}-${{ matrix.os-release }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CEPH_VERSION=${{ matrix.ceph-libs-version }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            PYTHON_VERSION=${{ matrix.python-version }}
+            OS_RELEASE=${{ matrix.os-release }}
+            CEPH_REPO=${{ matrix.ceph-repo }}
+            CEPH_VERSION=${{ matrix.ceph-release }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -152,14 +195,19 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ContainerFiles/ceph-libs
+          file: ContainerFiles/ceph-client
           push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-libs-version }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-libs-version }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-release }}-${{ matrix.python-version }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-release }}-${{ matrix.python-version }}-${{ matrix.os-release }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.ceph-release }}-${{ matrix.python-version }}-${{ matrix.os-release }}-latest
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CEPH_VERSION=${{ matrix.ceph-libs-version }}
             CACHEBUST=${{ github.sha }}
+            GHCR_URL=${{ env.GHCR_URL }}
+            PYTHON_VERSION=${{ matrix.python-version }}
+            OS_RELEASE=${{ matrix.os-release }}
+            CEPH_REPO=${{ matrix.ceph-repo }}
+            CEPH_RELEASE=${{ matrix.ceph-release }}
