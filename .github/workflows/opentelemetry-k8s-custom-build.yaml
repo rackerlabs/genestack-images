@@ -61,7 +61,8 @@ jobs:
       run: |
         echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-    - name: Docker push
+    - name: Docker push otel-flex-collector image
+      if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
       run: |
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
