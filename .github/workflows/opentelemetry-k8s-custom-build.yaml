@@ -1,0 +1,71 @@
+---
+name: Build and Push Opentelemetry k8s custom image to GHCR
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  packages: write
+  pull-requests: write
+  security-events: write
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/opentelemetry-k8s-custom-build.yaml
+      - manifests/opentelemetry-k8s-custom-manifest.yaml
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/otel-flex-collector
+  OT_VERSION: 0.0.1
+
+jobs:
+  build-collector-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      write-all
+
+    steps:
+    - name: Dynamically set MY_DATE environment variable
+      run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Package Collector
+      uses: observiq/otel-distro-builder@v1
+      with:
+        manifest: "manifests/opentelemetry-k8s-custom-manifest.yaml"
+        platforms: "linux/amd64"
+        create_release: false
+        upload_artifacts: true
+
+    - name: List files in artifact dir
+      run: |
+        echo "Listing files in the artifact directory:"
+        ls -laR ./artifacts
+
+    - name: Load pre-built Docker image from file
+      run: |
+        docker import ./artifacts/otel-flex-collector_v0.0.0-SNAPSHOT-none_linux_amd64.tar.gz ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
+        docker import ./artifacts/otel-flex-collector_v0.0.0-SNAPSHOT-none_linux_amd64.tar.gz ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
+
+    - name: Test list docker images
+      run: |
+        docker images
+
+    - name: Docker push
+      run: |
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
