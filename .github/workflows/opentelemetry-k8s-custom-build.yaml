@@ -15,7 +15,7 @@ on:
       - .github/workflows/opentelemetry-k8s-custom-build.yaml
       - manifests/opentelemetry-k8s-custom-manifest.yaml
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
     inputs:
       otel-version:
@@ -44,16 +44,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v2
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Build and Package Collector
       uses: observiq/otel-distro-builder@v1
       with:
@@ -62,25 +52,17 @@ jobs:
         create_release: false
         upload_artifacts: true
 
-    - name: List files in artifact dir
-      run: |
-        echo "Listing files in the artifact directory:"
-        ls -laR ./artifacts
-
     - name: Load pre-built Docker image from file
       run: |
         docker import ./artifacts/otel-flex-collector_v0.0.0-SNAPSHOT-none_linux_amd64.tar.gz ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
         docker import ./artifacts/otel-flex-collector_v0.0.0-SNAPSHOT-none_linux_amd64.tar.gz ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
 
-    - name: Test list docker images
-      run: |
-        docker images
-
     - name: Login to docker ghcr.io
       run: |
         echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-    - name: Docker push
+    - name: Docker push otel-flex-collector image
+      if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
       run: |
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
