@@ -51,7 +51,7 @@ env:
   openstack_constraints: >
     ["unmaintained/2024.1", "stable/2025.1"]
   osCapiPluginTag: >
-    ["1.2.1"]
+    ["1.2.1", "master"]
 
 jobs:
   init:

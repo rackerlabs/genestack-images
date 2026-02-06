@@ -1,0 +1,68 @@
+---
+name: Build and Push Opentelemetry k8s custom image to GHCR
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+  packages: write
+  pull-requests: write
+  security-events: write
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/opentelemetry-k8s-custom-build.yaml
+      - manifests/opentelemetry-k8s-custom-manifest.yaml
+  schedule:
+    - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
+  workflow_dispatch:
+    inputs:
+      otel-version:
+        description: 'Version of Opentelemetry collector to use'
+        required: true
+        default: "0.144.0"
+        type: choice
+        options:
+          - 0.144.0
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/otel-flex-collector
+  OT_VERSION: 0.0.1
+
+jobs:
+  build-collector-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      write-all
+
+    steps:
+    - name: Dynamically set MY_DATE environment variable
+      run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build and Package Collector
+      uses: observiq/otel-distro-builder@v1
+      with:
+        manifest: "manifests/opentelemetry-k8s-custom-manifest.yaml"
+        platforms: "linux/amd64"
+        create_release: false
+        upload_artifacts: true
+
+    - name: Load pre-built Docker image from file
+      run: |
+        docker import ./artifacts/otel-flex-collector_v0.0.0-SNAPSHOT-none_linux_amd64.tar.gz ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
+        docker import ./artifacts/otel-flex-collector_v0.0.0-SNAPSHOT-none_linux_amd64.tar.gz ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
+
+    - name: Login to docker ghcr.io
+      run: |
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Docker push otel-flex-collector image
+      if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      run: |
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-latest
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OT_VERSION }}-${{ env.MY_DATE }}
