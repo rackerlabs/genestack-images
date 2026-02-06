@@ -151,7 +151,7 @@ class BlazarReservationSplitter:
             # Add resource-type specific fields
             resource_type = reservation.get('resource_type', '')
             
-            if resource_type == 'virtual:instance':
+            if resource_type == 'flavor:instance':
                 reservation_payload.update({
                     'vcpus': reservation.get('vcpus'),
                     'memory_mb': reservation.get('memory_mb'),
@@ -171,6 +171,11 @@ class BlazarReservationSplitter:
                     'min': reservation.get('min'),
                     'max': reservation.get('max'),
                 })
+            elif resource_type == 'virtual:floatingip':
+                reservation_payload.update({
+                    'amount': reservation.get('amount'),
+                    'network_id': reservation.get('network_id'),
+                })
             
             individual_payloads.append(reservation_payload)
             
@@ -188,12 +193,12 @@ class BlazarReservationSplitter:
         resource_type = reservation_payload.get('resource_type', 'unknown')
         
         # Determine the specific event type based on resource type
-        if resource_type == 'virtual:instance':
-            specific_event_type = f"{event_type}.virtual_instance"
+        if resource_type == 'flavor:instance':
+            specific_event_type = f"{event_type}.flavor_instance"
         elif resource_type == 'physical:host':
             specific_event_type = f"{event_type}.physical_host"
-        else:
-            specific_event_type = f"{event_type}.{resource_type.replace(':', '_')}"
+        elif resource_type == 'virtual:floatingip':
+            specific_event_type = f"{event_type}.virtual_floatingip"
         
         # Create Oslo notification message format
         message = {
@@ -258,7 +263,7 @@ class BlazarReservationSplitter:
             for reservation_payload in reservation_payloads:
                 self.publish_reservation_event(
                     reservation_payload,
-                    'blazar.reservation.start'
+                    'blazar.reservation'
                 )
             
             # Acknowledge the message
@@ -360,3 +365,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
