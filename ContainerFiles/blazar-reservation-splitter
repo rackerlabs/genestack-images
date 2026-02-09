@@ -1,0 +1,46 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG VENV_TAG=3.12-latest
+
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+WORKDIR /app
+COPY scripts/blazar-reservation-splitter-app/requirements.txt .
+
+RUN /var/lib/openstack/bin/pip install --no-cache-dir -r requirements.txt
+RUN find / -name '*.pyc' -delete \
+    && find / -name '*.pyo' -delete \
+    && find / -name '__pycache__' -delete
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL org.opencontainers.image.name="blazar-reservation-splitter"
+LABEL org.opencontainers.image.description="Blazar Reservation Splitter for Ceilometer"
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y curl \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the environment variables for the barbican-exporter
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/var/lib/openstack/bin:$PATH"
+
+COPY scripts/blazar-reservation-splitter-app/blazar-reservation-splitter.py /app/
+
+# Create non-root user
+RUN useradd -m -u 1000 -s /bin/bash splitter && \
+    chown -R splitter:splitter /app
+
+USER splitter
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import sys; sys.exit(0)"
+
+# Run the application
+ENTRYPOINT ["python", "-u", "blazar-reservation-splitter.py"]
