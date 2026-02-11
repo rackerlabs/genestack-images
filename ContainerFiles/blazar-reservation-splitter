@@ -32,6 +32,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY scripts/blazar-reservation-splitter-app/blazar-reservation-splitter.py /app/
 
+WORKDIR /app
+
 # Create non-root user
 RUN useradd -m -u 1000 -s /bin/bash splitter && \
     chown -R splitter:splitter /app
