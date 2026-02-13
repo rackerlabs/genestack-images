@@ -254,6 +254,12 @@ class BlazarReservationSplitter:
             event_type = oslo_message.get('event_type')
             payload = oslo_message.get('payload', {})
             
+            # Only process target events ('start_lease')
+            if event_type not in CONF.target_events:
+                logger.debug(f"Skipping event: {event_type} (not in target events: {CONF.target_events})")
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+                return
+
             logger.info(f"Processing event: {event_type} for lease {payload.get('lease_id')}")
             
             # Split reservations
