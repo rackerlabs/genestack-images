@@ -54,7 +54,7 @@ opts = [
                default=os.getenv('QUEUE', 'blazar_reservation_splitter'),
                help='Queue name for this sidecar'),
     cfg.ListOpt('target_events',
-                default=['start_lease'],
+                default=['lease.event.start_lease'],
                 help='List of Blazar events to intercept'),
 ]
 
@@ -254,7 +254,7 @@ class BlazarReservationSplitter:
             event_type = oslo_message.get('event_type')
             payload = oslo_message.get('payload', {})
             
-            # Only process target events ('start_lease')
+            # Only process target events ('lease.event.start_lease')
             if event_type not in CONF.target_events:
                 logger.debug(f"Skipping event: {event_type} (not in target events: {CONF.target_events})")
                 ch.basic_ack(delivery_tag=method.delivery_tag)
