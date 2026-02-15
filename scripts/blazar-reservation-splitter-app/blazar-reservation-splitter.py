@@ -95,8 +95,11 @@ class BlazarReservationSplitter:
         self.channel.queue_declare(queue=CONF.queue, durable=True)
         
         # Bind to specific event types on the OpenStack exchange
+        # Only bind to target events so sidecar doesn't interfere with Ceilometer receiving all events
         for event_type in CONF.target_events:
-            routing_key = f"notifications.info"
+            # Convert event_type format ('lease.event.start_lease') to routing key format
+            # Routing key pattern: notifications.info.<event_type>
+            routing_key = f"notifications.info.{event_type}"
             self.channel.queue_bind(
                 exchange=CONF.exchange,
                 queue=CONF.queue,
@@ -254,14 +257,25 @@ class BlazarReservationSplitter:
             event_type = oslo_message.get('event_type')
             payload = oslo_message.get('payload', {})
             
-            # Only process target events ('lease.event.start_lease')
-            if event_type not in CONF.target_events:
-                logger.debug(f"Skipping event: {event_type} (not in target events: {CONF.target_events})")
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-                return
-
             logger.info(f"Processing event: {event_type} for lease {payload.get('lease_id')}")
             
+            # Re-publish the original start_lease event back to the exchange for Ceilometer
+            routing_key = "notifications.info"
+            try:
+                self.channel.basic_publish(
+                    exchange=CONF.exchange,
+                    routing_key=routing_key,
+                    body=body,
+                    properties=pika.BasicProperties(
+                        delivery_mode=2,  # Persistent
+                        content_type='application/json',
+                    )
+                )
+                logger.debug(f"Re-published original {event_type} event for lease {payload.get('lease_id')}")
+            except Exception as e:
+                logger.error(f"Failed to re-publish original event: {e}")
+                raise
+
             # Split reservations
             reservation_payloads = self.split_reservations(payload)
             
