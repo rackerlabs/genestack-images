@@ -258,7 +258,7 @@ class BlazarReservationSplitter:
             payload = oslo_message.get('payload', {})
             
             logger.info(f"Processing event: {event_type} for lease {payload.get('lease_id')}")
-            logger.debug(f"Full payload: {json.dumps(payload, indent=2, default=str)}")
+            logger.info(f"Full payload: {json.dumps(payload, indent=2, default=str)}")
             
             # Re-publish the original start_lease event back to the exchange for Ceilometer
 #            routing_key = "notifications.info"
