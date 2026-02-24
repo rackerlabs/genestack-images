@@ -83,6 +83,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 libunbound8 \
                                                 libunwind8 \
                                                 libxdp1 \
+                                                libxml2 \
                                                 net-tools \
                                                 openssl \
                                                 procps \
