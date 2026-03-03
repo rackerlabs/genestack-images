@@ -36,6 +36,8 @@ on:
         options:
           - master
           - "8.0.0"
+          - unmaintained/2024.1
+          - stable/2025.1
       project-version:
         description: 'Version of OpenStack octavia to build, defaults to openstack-constraints if unspecified'
         required: false
@@ -92,6 +94,15 @@ jobs:
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
+      - name: Set RXT Version
+        run: |
+          if [ "${{ env.OS_VERSION_PARSE }}" = "2024.1" ]; then
+            echo "RXT_VERSION=rxt-2024.1" >> $GITHUB_ENV
+          elif [ "${{ env.OS_VERSION_PARSE }}" = "2025.1" ]; then
+            echo "RXT_VERSION=rxt-2025.1" >> $GITHUB_ENV
+          else
+            echo "RXT_VERSION=rxt-2025.1" >> $GITHUB_ENV
+          fi
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -119,6 +130,7 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             OVN_PLUGIN_VERSION=${{ matrix.ovnPluginTag }}
+            RXT_VERSION=${{ env.RXT_VERSION }}
             CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1  # using latest trivy scanner
@@ -177,4 +189,5 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             OVN_PLUGIN_VERSION=${{ matrix.ovnPluginTag }}
+            RXT_VERSION=${{ env.RXT_VERSION }}
             CACHEBUST=${{ github.sha }}

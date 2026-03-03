@@ -8,6 +8,7 @@ ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG OVN_PLUGIN_VERSION=master
+ARG RXT_VERSION=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -33,7 +34,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/octavia.git@${OS_VERSION}#egg=octavia \
+                                       git+https://github.com/the2hill/octavia.git@${RXT_VERSION}#egg=octavia \
                                        git+https://github.com/openstack/ovn-octavia-provider@${OVN_PLUGIN_VERSION}#egg=ovn_octavia_provider \
                                        PyMySQL \
                                        etcd3gw \
