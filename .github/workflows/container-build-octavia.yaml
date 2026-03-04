@@ -36,6 +36,7 @@ on:
         options:
           - master
           - "8.0.0"
+          - "9.0.0"
       project-version:
         description: 'Version of OpenStack octavia to build, defaults to openstack-constraints if unspecified'
         required: false
