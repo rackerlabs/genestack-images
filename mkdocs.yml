@@ -137,6 +137,7 @@ nav:
       - Blazar: containers/blazar.md
       - Ceph Libs: containers/ceph-libs.md
       - Designate: containers/designate.md
+      - Ceilometer: containers/ceilometer.md
       - Cinder: containers/cinder.md
       - Cloudkitty: containers/cloudkitty.md
       - Freezer: containers/freezer.md
