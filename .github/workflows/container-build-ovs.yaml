@@ -25,7 +25,7 @@ on:
         type: choice
         options:
           - "main"
-          - "v3.5.1"
+          - "branch-3.5"
 
 env:
   REGISTRY: ghcr.io
@@ -34,7 +34,7 @@ env:
   #                  workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                  workaround until there's a better way to handle this.
   ovs_release: >
-    ["v3.5.1"]
+    ["branch-3.5"]
 jobs:
   init:
     runs-on: ubuntu-latest
