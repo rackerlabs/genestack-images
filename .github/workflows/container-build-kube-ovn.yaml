@@ -27,6 +27,7 @@ on:
         options:
           - "v1.13.15"
           - "v1.14.15"
+          - "v1.15.4"
 
 env:
   REGISTRY: ghcr.io
@@ -35,7 +36,7 @@ env:
   #                  workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                  workaround until there's a better way to handle this.
   kube_ovn: >
-    ["v1.14.15", "v1.13.15"]
+    ["v1.15.4", "v1.14.15", "v1.13.15"]
 jobs:
   init:
     runs-on: ubuntu-latest
