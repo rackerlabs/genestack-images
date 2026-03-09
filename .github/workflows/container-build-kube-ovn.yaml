@@ -14,6 +14,7 @@ on:
     paths:
       - .github/workflows/container-build-kube-ovn.yaml
       - ContainerFiles/kube-ovn
+      - scripts/kube-ovn.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
