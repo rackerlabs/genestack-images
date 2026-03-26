@@ -1,0 +1,92 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+
+ARG CEPH_TAG=v19.2.2-latest
+FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:${CEPH_TAG} AS dependency_build
+ARG CACHEBUST=0
+ARG GNOCCHI_VERSION=master
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             bash \
+                                             brotli \
+                                             build-essential \
+                                             curl \
+                                             docutils-common \
+                                             gettext \
+                                             git \
+                                             liberasurecode-dev \
+                                             libffi-dev \
+                                             libjs-sphinxdoc \
+                                             libjs-underscore \
+                                             libldap2-dev \
+                                             libpq-dev \
+                                             libsasl2-dev \
+                                             libsnappy-dev \
+                                             libssl-dev \
+                                             libsystemd-dev \
+                                             libxml2-dev \
+                                             libxslt1-dev \
+                                             libxslt1.1 \
+                                             pkg-config \
+                                             ssl-cert \
+                                             xmlsec1
+RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+  && sed -i '/^gnocchi===.*/d' /tmp/upper-constraints.txt \
+  && /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
+                                        "gnocchi[postgresql,ceph,keystone] @ git+https://github.com/gnocchixyz/gnocchi.git@${GNOCCHI_VERSION}" \
+                                        gnocchiclient \
+                                        PyMySQL \
+                                        pymemcache \
+                                        uwsgi
+
+COPY scripts/gnocchi-cve-patching.sh /opt/
+RUN bash /opt/gnocchi-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+  && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
+  && for f in /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA; do \
+       if [ -f "$f" ]; then \
+         sed -i '/^Usage/,/^Documentation\n^-.*$/d' "$f"; \
+       fi; \
+     done
+
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="gnocchi"
+LABEL org.opencontainers.image.description="OpenStack Service (gnocchi) built for the enterprise."
+COPY --from=dependency_build /usr/local/lib /usr/local/lib
+COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                                libffi8 \
+                                                libpq5 \
+                                                libsnappy1v5 \
+                                                libxml2 \
+                                                libxslt1.1 \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 gnocchi \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/gnocchi gnocchi \
+  && mkdir -p /var/lib/openstack/etc/gnocchi \
+  && ln -s /var/lib/openstack/etc/gnocchi /etc/gnocchi \
+  && chown gnocchi:gnocchi -h /etc/gnocchi \
+  && chown -R gnocchi:gnocchi /var/lib/openstack/etc/gnocchi
+ENV PATH="/usr/local/bin:/usr/local/sbin:/var/lib/openstack/bin:$PATH"
+WORKDIR /var/lib/openstack
+USER 42424:42424
+ENTRYPOINT ["/var/lib/openstack/bin/gnocchi-upgrade"]
