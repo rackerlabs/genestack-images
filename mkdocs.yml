@@ -140,6 +140,7 @@ nav:
       - Ceilometer: containers/ceilometer.md
       - Cinder: containers/cinder.md
       - Cloudkitty: containers/cloudkitty.md
+      - Gnocchi: containers/gnocchi.md
       - Freezer: containers/freezer.md
       - Glance: containers/glance.md
       - Heat: containers/heat.md
