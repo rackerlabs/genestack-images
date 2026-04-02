@@ -40,6 +40,7 @@ RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requi
                                         gnocchiclient \
                                         PyMySQL \
                                         pymemcache \
+                                        python-memcached \
                                         uwsgi
 
 COPY scripts/gnocchi-cve-patching.sh /opt/
@@ -58,7 +59,7 @@ RUN find / -name '*.pyc' -delete \
      done
 
 
-FROM python:3.12-slim-bookworm
+FROM ghcr.io/rackerlabs/genestack-images/apache:latest
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="gnocchi"
@@ -89,4 +90,4 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 ENV PATH="/usr/local/bin:/usr/local/sbin:/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 USER 42424:42424
-ENTRYPOINT ["/var/lib/openstack/bin/gnocchi-upgrade"]
+ENTRYPOINT ["/usr/sbin/apache2ctl"]

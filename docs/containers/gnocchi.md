@@ -2,7 +2,7 @@
 
 The `gnocchi` image is built from [ContainerFiles/gnocchi](https://github.com/rackerlabs/genestack-images/blob/main/ContainerFiles/gnocchi). Security patches are applied by [scripts/gnocchi-cve-patching.sh](https://github.com/rackerlabs/genestack-images/blob/main/scripts/gnocchi-cve-patching.sh).
 
-This container packages the Gnocchi metric storage service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for integration.
+This container packages the Gnocchi metric storage service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for Apache/mod_wsgi integration.
 
 ``` mermaid
 graph LR
@@ -44,6 +44,7 @@ graph LR
 ## Dependencies
 
 - Builds From [Ceph Libs](ceph-libs.md)
+- Runtime Base [Apache](apache.md)
 
 ## Container Image
 
