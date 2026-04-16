@@ -25,9 +25,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libsasl2-dev \
                                              libssl-dev \
                                              libsystemd-dev \
+                                             libvirt-dev \
+                                             libvirt0 \
                                              libxml2-dev \
                                              libxslt1-dev \
                                              pkg-config \
+                                             python3-dev \
                                              ssl-cert \
                                              xmlsec1
 RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
@@ -37,7 +40,8 @@ RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requi
                                         ceilometermiddleware \
                                         gnocchiclient \
                                         PyMySQL \
-                                        python-memcached
+                                        python-memcached \
+                                        libvirt-python
 
 COPY scripts/ceilometer-cve-patching.sh /opt/
 RUN bash /opt/ceilometer-cve-patching.sh
@@ -63,7 +67,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (ceilometer) built
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y libxml2 libvirt0 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
