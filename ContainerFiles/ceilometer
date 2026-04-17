@@ -10,29 +10,20 @@ ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
-                                             bash \
-                                             brotli \
                                              build-essential \
                                              curl \
-                                             docutils-common \
-                                             gettext \
                                              git \
                                              libffi-dev \
-                                             libjs-sphinxdoc \
-                                             libjs-underscore \
                                              libldap2-dev \
                                              libpq-dev \
                                              libsasl2-dev \
                                              libssl-dev \
                                              libsystemd-dev \
                                              libvirt-dev \
-                                             libvirt0 \
                                              libxml2-dev \
                                              libxslt1-dev \
                                              pkg-config \
-                                             python3-dev \
-                                             ssl-cert \
-                                             xmlsec1
+                                             python3-dev
 RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
   && sed -i '/^ceilometer===.*/d' /tmp/upper-constraints.txt \
   && /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
