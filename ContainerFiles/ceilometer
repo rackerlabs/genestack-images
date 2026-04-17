@@ -10,26 +10,20 @@ ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
-                                             bash \
-                                             brotli \
                                              build-essential \
                                              curl \
-                                             docutils-common \
-                                             gettext \
                                              git \
                                              libffi-dev \
-                                             libjs-sphinxdoc \
-                                             libjs-underscore \
                                              libldap2-dev \
                                              libpq-dev \
                                              libsasl2-dev \
                                              libssl-dev \
                                              libsystemd-dev \
+                                             libvirt-dev \
                                              libxml2-dev \
                                              libxslt1-dev \
                                              pkg-config \
-                                             ssl-cert \
-                                             xmlsec1
+                                             python3-dev
 RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
   && sed -i '/^ceilometer===.*/d' /tmp/upper-constraints.txt \
   && /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
@@ -37,7 +31,8 @@ RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requi
                                         ceilometermiddleware \
                                         gnocchiclient \
                                         PyMySQL \
-                                        python-memcached
+                                        python-memcached \
+                                        libvirt-python
 
 COPY scripts/ceilometer-cve-patching.sh /opt/
 RUN bash /opt/ceilometer-cve-patching.sh
@@ -63,7 +58,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (ceilometer) built
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y libxml2 libvirt0 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
