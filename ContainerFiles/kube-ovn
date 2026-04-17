@@ -51,4 +51,6 @@ RUN ln -sf /kube-ovn/kube-ovn-cmd /kube-ovn/kube-ovn-monitor && \
     setcap CAP_NET_ADMIN,CAP_NET_RAW,CAP_NET_BIND_SERVICE,CAP_SYS_ADMIN+eip /kube-ovn/kube-ovn-daemon
 RUN ln -sf /kube-ovn/grace_stop_ovn_controller /usr/share/ovn/scripts/grace_stop_ovn_controller
 RUN /kube-ovn/iptables-wrapper-installer.sh --no-sanity-check
+COPY scripts/kube-ovn-cve-patching.sh /opt/
+RUN bash /opt/kube-ovn-cve-patching.sh || true
 WORKDIR /kube-ovn

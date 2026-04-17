@@ -9,6 +9,8 @@ WORKDIR /app
 COPY scripts/blazar-reservation-splitter-app/requirements.txt .
 
 RUN /var/lib/openstack/bin/pip install --no-cache-dir -r requirements.txt
+COPY scripts/blazar-reservation-splitter-cve-patching.sh /opt/
+RUN bash /opt/blazar-reservation-splitter-cve-patching.sh
 RUN find / -name '*.pyc' -delete \
     && find / -name '*.pyo' -delete \
     && find / -name '__pycache__' -delete
