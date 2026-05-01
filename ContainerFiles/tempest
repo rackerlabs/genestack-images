@@ -5,20 +5,23 @@
 ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
+
 ARG OS_VERSION=master
+ARG TEMPEST_BRANCH_TAG=43.0.0
 ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
-                                             libffi-dev \
-                                             libffi-devel \
-                                             gcc \
-                                             python3-dev \
-                                             python3-devel \
-                                             openssl-devel \
-                                             libssl-dev
+                                        python3-dev \
+                                        python3-venv \
+                                        build-essential \
+                                        python3-pip \
+                                        libssl-dev \
+                                        git \
+                                        lsb-release
+
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/tempest.git@${OS_VERSION}#egg=openstack-tempest \
+                                        git+https://opendev.org/openstack/tempest.git@${TEMPEST_BRANCH_TAG}#egg=tempest
 
 COPY scripts/tempest-cve-patching.sh /opt/
 RUN bash /opt/tempest-cve-patching.sh
@@ -29,7 +32,7 @@ RUN find / -name '*.pyc' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
-  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
+  && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA 2>/dev/null || true
 
 
 FROM python:3.12-slim-bookworm
@@ -40,7 +43,6 @@ LABEL org.opencontainers.image.description="OpenStack Service (tempest) built fo
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
@@ -59,5 +61,5 @@ ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
 USER 42424:42424
-# Set the entrypoint to the tempest-manage command
-ENTRYPOINT ["/var/lib/openstack/bin/tempest-manage"]
+# Set the entrypoint to the tempest command
+ENTRYPOINT ["/var/lib/openstack/bin/tempest"]
