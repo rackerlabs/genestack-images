@@ -61,5 +61,3 @@ ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
 USER 42424:42424
-# Set the entrypoint to the tempest command
-ENTRYPOINT ["/var/lib/openstack/bin/tempest"]
