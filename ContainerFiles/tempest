@@ -6,9 +6,8 @@ ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
 
-ARG OS_VERSION=master
 ARG TEMPEST_BRANCH_TAG=43.0.0
-ARG OS_CONSTRAINTS=master
+ARG OS_CONSTRAINTS=stable/2025.1
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -46,13 +45,15 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
-  && find / -name '*.pyc' -delete \
-  && find / -name '*.pyo' -delete \
-  && find / -name '__pycache__' -delete \
+  && find / ! -path '/proc/*' ! -path '/sys/*' ! -path '/dev/*' -name '*.pyc' -delete 2>/dev/null || true \
+  && find / ! -path '/proc/*' ! -path '/sys/*' ! -path '/dev/*' -name '*.pyo' -delete 2>/dev/null || true \
+  && find / ! -path '/proc/*' ! -path '/sys/*' ! -path '/dev/*' -name '__pycache__' -type d -delete 2>/dev/null || true \
   && groupadd --system --gid 42424 tempest \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/tempest tempest \
   && mkdir -p /var/lib/openstack/etc/tempest \
   && ln -s /var/lib/openstack/etc/tempest /etc/tempest \
+  && chown -R tempest:tempest /var/lib/tempest \
+  && chown -R tempest:tempest /var/lib/openstack \
   && chown tempest:tempest -h /etc/tempest \
   && chown -R tempest:tempest /var/lib/openstack/etc/tempest
 # Set the environment variables for the tempest venv
