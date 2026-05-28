@@ -35,7 +35,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              pkg-config \
                                              ssl-cert \
                                              xmlsec1
-RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+ARG CACHEBUST
+RUN /var/lib/openstack/bin/pip install -vvv --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://github.com/rackerlabs/keystone.git@${OS_VERSION}#egg=keystone \
                                        git+https://github.com/rackerlabs/keystone-rxt@${RXT_VERSION}#egg=keystone_rxt \
                                        ldappool \
