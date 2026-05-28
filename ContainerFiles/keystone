@@ -36,7 +36,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/keystone.git@${OS_VERSION}#egg=keystone \
+                                       git+https://github.com/rackerlabs/keystone.git@${OS_VERSION}#egg=keystone \
                                        git+https://github.com/rackerlabs/keystone-rxt@${RXT_VERSION}#egg=keystone_rxt \
                                        ldappool \
                                        pyngus \
