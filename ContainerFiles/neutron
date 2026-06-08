@@ -4,6 +4,7 @@
 
 ARG BUILT_TAG=branch-3.5-latest
 FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
+ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG RXT_VERSION=master
@@ -32,6 +33,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              pkg-config \
                                              ssl-cert \
                                              xmlsec1
+ARG CACHEBUST
 RUN /var/lib/openstack/bin/pip install -vvv --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/ovn-bgp-agent@${OS_VERSION}#egg=ovn-bgp-agent \
                                        git+https://github.com/rackerlabs/neutron.git@${RXT_VERSION}#egg=neutron \
