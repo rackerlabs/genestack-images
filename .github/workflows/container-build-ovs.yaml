@@ -64,6 +64,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Dynamically set MY_DATE environment variable
         run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      - name: Normalize image repository name
+        run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
       - name: Dynamically set environment variables
         run: |
           VERSION=$(echo -n "${{ matrix.ovs-version }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
