@@ -10,7 +10,7 @@ ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive
 RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
   && sed -i '/^gnocchi===.*/d' /tmp/upper-constraints.txt \
-  && /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
+  && /var/lib/openstack/bin/pip install -vvv --no-cache-dir --constraint /tmp/upper-constraints.txt \
                                         "gnocchi[postgresql,ceph,keystone,redis] @ git+https://github.com/gnocchixyz/gnocchi.git@${GNOCCHI_VERSION}" \
                                         gnocchiclient \
                                         PyMySQL \
@@ -18,17 +18,27 @@ RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requi
                                         SQLAlchemy \
                                         uwsgi \
                                         cffi \
-                                        bcrypt
+                                        bcrypt \
+                                        cryptography
 
 COPY scripts/gnocchi-cve-patching.sh /opt/
 RUN bash /opt/gnocchi-cve-patching.sh
 
+# Strip Ceph runtime libraries Gnocchi never uses. Per upstream setup.cfg the
+# `[ceph]` extra has no Python deps and relies on python3-rados, which only
+# needs librados. RBD (block device), CephFS, RGW (object gateway), and the
+# Ceph SQLite VFS are unrelated and account for ~1.3 GB on their own.
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
   && find / -name '*.whl' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
+  && rm -f /usr/local/lib/librbd.so* \
+  && rm -f /usr/local/lib/librgw.so* \
+  && rm -f /usr/local/lib/libcephfs.so* \
+  && rm -f /usr/local/lib/libcephsqlite.so* \
+  && rm -rf /root/.cache /tmp/* /var/tmp/* \
   && for f in /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA; do \
        if [ -f "$f" ]; then \
          sed -i '/^Usage/,/^Documentation\n^-.*$/d' "$f"; \
@@ -45,54 +55,38 @@ COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=dependency_build /usr/lib/python3/dist-packages /usr/lib/python3/dist-packages
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
+  && BUILD_DEPS="apache2-dev build-essential libffi-dev libldap2-dev libpq-dev libsasl2-dev libsnappy-dev libprotobuf-dev libssl-dev libsystemd-dev libxml2-dev libxslt1-dev librados-dev liberasurecode-dev pkg-config python3-dev" \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              apache2 \
-                                             apache2-dev \
-                                             libffi8 \
-                                             libpq5 \
-                                             libsnappy1v5 \
-                                             libxml2 \
-                                             python3 \
-                                             python3-dev \
-                                             python3-memcache \
                                              bash \
                                              brotli \
-                                             build-essential \
                                              curl \
-                                             wget \
-                                             locales \
-                                             docutils-common \
-                                             gettext \
-                                             git \
-                                             libffi-dev \
-                                             libjs-sphinxdoc \
-                                             libjs-underscore \
-                                             libldap2-dev \
-                                             libpq-dev \
-                                             postgresql \
-                                             memcached \
-                                             librados-dev \
-                                             liberasurecode-dev \
-                                             python3-rados \
-                                             ceph \
-                                             libsasl2-dev \
-                                             libsnappy-dev \
-                                             libprotobuf-dev \
-                                             libssl-dev \
-                                             libsystemd-dev \
-                                             libxml2-dev \
-                                             libxslt1-dev \
+                                             libffi8 \
+                                             liberasurecode1 \
+                                             libldap-2.5-0 \
+                                             libpq5 \
+                                             libprotobuf32 \
+                                             libsasl2-2 \
+                                             libsnappy1v5 \
+                                             libssl3 \
+                                             libsystemd0 \
+                                             libxml2 \
                                              libxslt1.1 \
-                                             pkg-config \
+                                             locales \
+                                             python3 \
+                                             python3-memcache \
+                                             python3-rados \
                                              ssl-cert \
                                              xmlsec1 \
-  && /var/lib/openstack/bin/pip install --upgrade mod_wsgi \
+                                             $BUILD_DEPS \
+  && /var/lib/openstack/bin/pip install --no-cache-dir --upgrade mod_wsgi \
   && /var/lib/openstack/bin/mod_wsgi-express module-config > /etc/apache2/mods-available/wsgi.load \
   && a2enmod wsgi \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get purge -y $BUILD_DEPS \
+  && apt-get autoremove -y --purge -o APT::AutoRemove::SuggestsImportant=false -o APT::AutoRemove::RecommendsImportant=true \
   && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/* /var/tmp/* \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
@@ -107,7 +101,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown www-data:www-data /var/run/apache2 /var/lock/apache2 /var/log/apache2
 # Set the environment variables for the gnocchi venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
-ENV PYTHONPATH="/usr/local/lib/python3.12/site-packages:/var/lib/openstack/lib/python3.12/site-packages:$PYTHONPATH"
+ENV PYTHONPATH="/usr/local/lib/python3.12/site-packages:/var/lib/openstack/lib/python3.12/site-packages"
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the entrypoint to the gnocchi upgrade command
