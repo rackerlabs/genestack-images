@@ -52,11 +52,13 @@ RUN mkdir -p /etc/udev/rules.d \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
-  && rm -rf /etc/ssh/ssh_host_*_key \
-  && find / -name '*.pyc' -delete \
-  && find / -name '*.pyo' -delete \
-  && find / -name '__pycache__' -delete \
-  && groupadd --system --gid 42424 nova \
+   && rm -rf /etc/ssh/ssh_host_*_key \
+   && find / -name '*.pyc' -delete \
+   && find / -name '*.pyo' -delete \
+   && find / -name '__pycache__' -delete
+COPY scripts/libvirt-cve-patching.sh /opt/
+RUN bash /opt/libvirt-cve-patching.sh || true
+RUN groupadd --system --gid 42424 nova \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/nova nova \
   && mkdir -p /etc/nova /var/log/nova /var/cache/nova \
   && chown nova:nova /etc/nova /var/log/nova /var/lib/nova /var/cache/nova \

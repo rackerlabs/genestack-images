@@ -13,6 +13,8 @@ RUN /var/lib/openstack/bin/pip install --upgrade pip "setuptools>=80.9.0,<81"
 #                  services and will be carried until the asyncore module is removed
 #                  other OpenStack dependencies.
 RUN /var/lib/openstack/bin/pip install --upgrade pyasyncore
+COPY scripts/openstack-venv-cve-patching.sh /opt/
+RUN bash /opt/openstack-venv-cve-patching.sh
 ENV PATH="/var/lib/openstack/bin:$PATH" \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \

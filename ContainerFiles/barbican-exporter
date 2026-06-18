@@ -9,6 +9,8 @@ WORKDIR /app
 COPY scripts/barbican-exporter-app/requirements.txt .
 
 RUN /var/lib/openstack/bin/pip install --no-cache-dir -r requirements.txt
+COPY scripts/barbican-exporter-cve-patching.sh /opt/
+RUN bash /opt/barbican-exporter-cve-patching.sh
 RUN find / -name '*.pyc' -delete \
     && find / -name '*.pyo' -delete \
     && find / -name '__pycache__' -delete

@@ -64,8 +64,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
-  && rm -rf /etc/ssh/ssh_host_*_key \
-  && find / -name '*.pyc' -delete \
-  && find / -name '*.pyo' -delete \
-  && find / -name '__pycache__' -delete
+   && rm -rf /etc/ssh/ssh_host_*_key \
+   && find / -name '*.pyc' -delete \
+   && find / -name '*.pyo' -delete \
+   && find / -name '__pycache__' -delete
+COPY scripts/ovs-cve-patching.sh /opt/
+RUN bash /opt/ovs-cve-patching.sh
 ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"
