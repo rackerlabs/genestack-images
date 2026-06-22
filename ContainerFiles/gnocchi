@@ -9,10 +9,11 @@ ARG GNOCCHI_VERSION=master
 ARG OS_CONSTRAINTS=master
 RUN export DEBIAN_FRONTEND=noninteractive
 RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-  && sed -i '/^gnocchi===.*/d' /tmp/upper-constraints.txt \
+  && sed -i -e '/^gnocchi===.*/d' -e '/^numpy===.*/d' /tmp/upper-constraints.txt \
   && /var/lib/openstack/bin/pip install -vvv --no-cache-dir --constraint /tmp/upper-constraints.txt \
                                         "gnocchi[postgresql,ceph,keystone,redis] @ git+https://github.com/gnocchixyz/gnocchi.git@${GNOCCHI_VERSION}" \
                                         gnocchiclient \
+                                        "numpy>=2.3.2,<3" \
                                         PyMySQL \
                                         pymemcache \
                                         SQLAlchemy \
