@@ -65,6 +65,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             CACHEBUST=${{ github.sha }}
+      - name: Extract shibboleth-sp version from built image
+        run: |
+          SHIBD_VERSION=$(docker run --rm --entrypoint dpkg-query \
+              "${IMAGE_NAME}:local" \
+              -W -f '${Version}' shibboleth-sp-utils \
+              | sed 's/[+~-].*//')
+          if [[ -z "${SHIBD_VERSION}" ]]; then
+            echo "::error::Could not determine shibboleth-sp version from image"
+            exit 1
+          fi
+          echo "Detected shibboleth-sp version: ${SHIBD_VERSION}"
+          echo "SHIBD_VERSION=${SHIBD_VERSION}" >> "$GITHUB_ENV"
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -116,7 +128,8 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHIBD_VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHIBD_VERSION }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             CACHEBUST=${{ github.sha }}
