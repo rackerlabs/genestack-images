@@ -8,18 +8,40 @@ LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="shibd"
 
+# We want the newest shibboleth-sp point release available in Debian, which
+# often lands in sid before it reaches the current stable release. Debian sid
+# is layered as an additional apt source and apt pinning is scoped so that
+# ONLY the shibboleth-sp source package (and everything built from it) prefers
+# sid; everything else stays on the base image's suite because sid's catch-all
+# priority (100) is below the default (500). Any strict dependency that only
+# exists in sid is still reachable. If a newer point release later appears in
+# the base suite, apt will simply pick that one (same or higher version wins)
+# and the sid pin becomes a no-op. The sid sources/pin files are removed after
+# install so the resulting image ships a plain apt configuration.
 RUN export DEBIAN_FRONTEND=noninteractive \
+  && echo "deb http://deb.debian.org/debian sid main" \
+       > /etc/apt/sources.list.d/sid.list \
+  && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: src:shibboleth-sp\nPin: release a=unstable\nPin-Priority: 990\n' \
+       > /etc/apt/preferences.d/shibboleth-sp \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y shibboleth-sp-utils \
+  && apt-get install --no-install-recommends -y shibboleth-sp-utils iproute2 \
+  && rm -f /etc/apt/sources.list.d/sid.list /etc/apt/preferences.d/shibboleth-sp \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && apt-get clean -y && rm -rf /var/lib/apt/lists/* \
+  && apt-get clean -y \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
-  && sed -i 's@fileName=.*@fileName=/dev/stdout@g' /etc/shibboleth/*.logger
+  && sed -i 's@fileName=.*@fileName=/dev/stdout@g' /etc/shibboleth/*.logger \
+  && printf '\n========================================================================\n Installed Shibboleth SP packages\n========================================================================\n' \
+  && dpkg-query -W -f '${Package} ${Version} (${Architecture})\n' \
+       shibboleth-sp-common libshibsp12 libshibsp-plugins shibboleth-sp-utils \
+  && printf '========================================================================\n' \
+  && shibd -v || true \
+  && printf '========================================================================\n\n' \
+  && rm -rf /var/lib/apt/lists/*
 
 # Set the user and group to match the original build
 USER 42424:42424
 
-# Set the entrypoint to the keystone-manage command
+# Set the entrypoint to the shibd command
 ENTRYPOINT ["/usr/sbin/shibd"]
