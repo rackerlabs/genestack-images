@@ -113,7 +113,7 @@ RUN <<EOT
   find / -name '*.whl' -delete
   rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key
   rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
-  sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA
+  sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA || true
 EOT
 
 FROM python:3.12.12-slim-trixie
