@@ -85,6 +85,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                             /var/lib/cinder/mnt
 # Set the environment variables for the cinder venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
+ENV PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
