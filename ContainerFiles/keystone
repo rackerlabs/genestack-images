@@ -70,15 +70,28 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
-  && mkdir -p /var/www/cgi-bin/keystone \
-  && groupadd --system --gid 42424 keystone \
-  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/keystone keystone \
-  && mkdir -p /var/lib/openstack/etc/keystone \
-  && ln -s /var/lib/openstack/etc/keystone /etc/keystone \
-  && mkdir -p /etc/keystone/credential-keys \
-  && mkdir -p /etc/keystone/fernet-keys \
-  && chown keystone:keystone -h /etc/keystone \
-  && chown -R keystone:keystone /var/lib/openstack/etc/keystone
+ && mkdir -p /var/www/cgi-bin/keystone \
+   && cat > /var/www/cgi-bin/keystone/keystone-wsgi-public << 'SCRIPT'
+#!/usr/bin/python3
+import sys
+from keystone.server.wsgi import initialize_public_application
+application = initialize_public_application()
+SCRIPT
+   && cat > /var/www/cgi-bin/keystone/keystone-wsgi-admin << 'SCRIPT'
+#!/usr/bin/python3
+import sys
+from keystone.server.wsgi import initialize_admin_application
+application = initialize_admin_application()
+SCRIPT
+   && chmod 755 /var/www/cgi-bin/keystone/keystone-wsgi-* \
+   && groupadd --system --gid 42424 keystone \
+   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/keystone keystone \
+   && mkdir -p /var/lib/openstack/etc/keystone \
+   && ln -s /var/lib/openstack/etc/keystone /etc/keystone \
+   && mkdir -p /etc/keystone/credential-keys \
+   && mkdir -p /etc/keystone/fernet-keys \
+   && chown keystone:keystone -h /etc/keystone \
+   && chown -R keystone:keystone /var/lib/openstack/etc/keystone
 # Set the environment variables for the keystone venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
