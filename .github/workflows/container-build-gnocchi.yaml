@@ -28,6 +28,7 @@ on:
           - master
           - stable/4.6
           - stable/4.7
+          - stable/4.8
       project-version:
         description: 'Version of Gnocchi to build, defaults to gnocchi-version if unspecified'
         required: false
@@ -42,7 +43,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   gnocchi_versions: >
-    ["stable/4.6", "stable/4.7"]
+    ["stable/4.6", "stable/4.7", "stable/4.8"]
 
 jobs:
   init:
@@ -92,6 +93,9 @@ jobs:
               ;;
             stable/4.7)
               echo "OS_CONSTRAINTS_REF=stable/2025.1" >> $GITHUB_ENV
+              ;;
+            stable/4.8)
+              echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV
               ;;
             *)
               echo "OS_CONSTRAINTS_REF=master" >> $GITHUB_ENV

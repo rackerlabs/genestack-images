@@ -27,6 +27,7 @@ on:
         options:
           - master
           - stable/2025.1
+          - stable/2026.1
       project-version:
         description: 'Version of OpenStack freezer to build, defaults to openstack-constraints if unspecified'
         required: false
@@ -37,7 +38,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}/freezer
   project_version: ${{ github.event.inputs.project-version }}
   openstack_constraints: >
-    ["stable/2025.1"]
+    ["stable/2025.1", "stable/2026.1"]
 
 jobs:
   init:

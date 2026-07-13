@@ -28,6 +28,7 @@ on:
           - master
           - unmaintained/2024.1
           - stable/2025.1
+          - stable/2026.1
       rackspace-plugin-version:
         description: 'Version of the Rackspace Keystone plugin to use'
         required: true
@@ -48,7 +49,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["unmaintained/2024.1", "stable/2025.1"]
+    ["stable/2025.1", "stable/2026.1"]
   rackspace_plugin: >
     ["main"]
 jobs:

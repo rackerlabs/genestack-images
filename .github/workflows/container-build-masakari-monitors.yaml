@@ -28,6 +28,7 @@ on:
           - master
           - unmaintained/2024.1
           - stable/2025.1
+          - stable/2026.1
       project-version:
         description: 'Version of OpenStack masakari-monitors to build, defaults to openstack-constraints if unspecified'
         required: false
@@ -41,7 +42,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["master", "unmaintained/2024.1", "stable/2025.1"]
+    ["stable/2025.1", "stable/2026.1"]
   # NOTE(zhmarvi): Temporarily require production environments using upstream masakari-monitors 'master' branch to fix two feature issues.
   #                1. The kubernetes check monitor feature was introduced and merged to be ported to stable/2025.2 tag but we require for
   #                Genestack versions 2024.1 and 2025.1 as of 11/2025.
