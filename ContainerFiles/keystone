@@ -70,14 +70,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
-&& mkdir -p /var/www/cgi-bin/keystone \
-    && printf '#!/usr/bin/python3\nfrom keystone.server.wsgi import initialize_public_application\napplication = initialize_public_application()\n' > /var/www/cgi-bin/keystone/keystone-wsgi-public \
-    && printf '#!/usr/bin/python3\nfrom keystone.server.wsgi import initialize_admin_application\napplication = initialize_admin_application()\n' > /var/www/cgi-bin/keystone/keystone-wsgi-admin \
-    && printf '#!/usr/bin/python3\nfrom keystone.server.wsgi import initialize_public_application\napplication = initialize_public_application()\n' > /var/www/cgi-bin/keystone/wsgi.py \
+ && mkdir -p /var/www/cgi-bin/keystone \
+   && printf '#!/usr/bin/python3\nfrom keystone.server.wsgi import initialize_public_application\napplication = initialize_public_application()\n' > /var/www/cgi-bin/keystone/keystone-wsgi-public \
+   && printf '#!/usr/bin/python3\nfrom keystone.server.wsgi import initialize_admin_application\napplication = initialize_admin_application()\n' > /var/www/cgi-bin/keystone/keystone-wsgi-admin \
    && chmod 755 /var/www/cgi-bin/keystone/keystone-wsgi-* \
-    && chmod 755 /var/www/cgi-bin/keystone/wsgi.py \
-    && chown -R keystone:keystone /var/www/cgi-bin/keystone \
-    && groupadd --system --gid 42424 keystone \
+   && groupadd --system --gid 42424 keystone \
   && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/keystone keystone \
   && mkdir -p /var/lib/openstack/etc/keystone \
   && ln -s /var/lib/openstack/etc/keystone /etc/keystone \
