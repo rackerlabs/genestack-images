@@ -22,11 +22,9 @@ on:
       openstack-constraints:
         description: 'Version of OpenStack Constraints to use'
         required: true
-        default: "master"
+        default: "stable/2026.1"
         type: choice
         options:
-          - master
-          - unmaintained/2024.1
           - stable/2025.1
           - stable/2026.1
       project-version:
