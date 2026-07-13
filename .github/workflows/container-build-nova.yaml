@@ -32,7 +32,7 @@ on:
       novnc-version:
         description: 'Version of novnc to use'
         required: true
-        default: " v1.6.0"
+        default: "v1.6.0"
         type: choice
         options:
           - "master"
