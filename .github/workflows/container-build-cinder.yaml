@@ -25,6 +25,7 @@ on:
         default: "stable/2026.1"
         type: choice
         options:
+          - unmaintained/2024.1
           - stable/2025.1
           - stable/2026.1
       project-version:
