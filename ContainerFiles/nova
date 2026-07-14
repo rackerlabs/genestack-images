@@ -4,7 +4,6 @@
 
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
-ARG NOVNC_VERSION=master
 
 FROM ubuntu:noble AS base
 
@@ -48,10 +47,10 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
                                                websockify \
                                                uwsgi
 
-RUN mkdir -p /tmp/novnc-tmp \
-  && git clone --branch ${NOVNC_VERSION} --depth 1 https://github.com/novnc/noVNC /tmp/novnc-tmp/noVNC \
-  && cp -r /tmp/novnc-tmp/noVNC/* /usr/share/novnc/ \
-  && rm -rf /tmp/novnc-tmp
+COPY dist/novnc.tar.gz /tmp/novnc.tar.gz
+RUN mkdir -p /usr/share/novnc \
+  && tar -xzf /tmp/novnc.tar.gz -C /usr/share/novnc --strip-components=1 \
+  && rm /tmp/novnc.tar.gz
 RUN cp -v /usr/share/novnc/vnc_lite.html /usr/share/novnc/vnc_auto.html
 
 COPY scripts/nova-cve-patching.sh /opt/
