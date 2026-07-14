@@ -33,7 +33,8 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
                                                python-memcached \
                                                os-brick \
                                                purestorage \
-                                               py-pure-client
+                                               py-pure-client \
+                                                uwsgi
 
 COPY scripts/cinder-cve-patching.sh /opt/
 RUN bash /opt/cinder-cve-patching.sh
