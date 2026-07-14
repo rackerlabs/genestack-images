@@ -2,7 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:v19.2.3-latest AS dependency_build
+FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:v19.2.2-latest AS dependency_build
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
