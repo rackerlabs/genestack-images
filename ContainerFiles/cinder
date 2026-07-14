@@ -78,8 +78,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                  /var/lib/cinder/mnt
 COPY --from=dependency_build /usr/local/lib /usr/local/lib
 COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
-RUN find /usr/local/lib/python3.12/site-packages -name '*rados*.so' -exec rsync -a {} /var/lib/openstack/lib/python3.12/site-packages/ \; 2>/dev/null || true
-RUN find /usr/local/lib/python3.12/site-packages -name '*rbd*.so' -exec rsync -a {} /var/lib/openstack/lib/python3.12/site-packages/ \; 2>/dev/null || true
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rados.cpython-312-x86_64-linux-gnu.so /var/lib/openstack/lib/python3.12/site-packages/
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd.cpython-312-x86_64-linux-gnu.so /var/lib/openstack/lib/python3.12/site-packages/
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rados-2.0.0-py3.12.egg-info /var/lib/openstack/lib/python3.12/site-packages/
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd-2.0.0-py3.12.egg-info /var/lib/openstack/lib/python3.12/site-packages/
 # Set the environment variables for the cinder venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
