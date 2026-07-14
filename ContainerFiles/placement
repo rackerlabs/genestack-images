@@ -34,6 +34,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/placement.git@${OS_VERSION}#egg=openstack-placement \
                                        PyMySQL \
+                                       cryptography \
                                        python-memcached \
                                        uwsgi
 
@@ -72,6 +73,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown -R placement:placement /var/lib/openstack/etc/placement
 # Set the environment variables for the placement venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
+# Install cryptography explicitly (keystonemiddleware dependency)
+RUN pip install cryptography
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
