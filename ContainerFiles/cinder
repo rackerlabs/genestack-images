@@ -2,8 +2,7 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG CEPH_TAG=v19.2.3-latest
-FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:${CEPH_TAG} AS ceph_build
+FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:v19.2.3-latest AS ceph_build
 
 ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
