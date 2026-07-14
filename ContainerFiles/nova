@@ -48,10 +48,7 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
                                                websockify \
                                                uwsgi
 
-RUN curl -sL https://github.com/novnc/noVNC/archive/${NOVNC_VERSION}.tar.gz -o /tmp/novnc.tar.gz \
-  && mkdir -p /usr/share/novnc \
-  && tar -xzf /tmp/novnc.tar.gz -C /usr/share/novnc --strip-components=1 \
-  && rm /tmp/novnc.tar.gz
+RUN git clone --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
 RUN cp -v /usr/share/novnc/vnc_lite.html /usr/share/novnc/vnc_auto.html
 
 COPY scripts/nova-cve-patching.sh /opt/
