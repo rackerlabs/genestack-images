@@ -38,17 +38,14 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                        git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
-                                        git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
-                                        PyMySQL \
-                                        libvirt-python \
-                                        novnc \
-                                        python-memcached \
-                                        python-rados \
-                                        python-rbd \
-                                        python-cephfs \
-                                        websockify \
-                                        uwsgi
+                                         git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
+                                         git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
+                                         PyMySQL \
+                                         libvirt-python \
+                                         novnc \
+                                         python-memcached \
+                                         websockify \
+                                         uwsgi
 
 RUN git clone --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
 RUN rm -rf /usr/share/novnc/.git
