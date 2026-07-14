@@ -78,8 +78,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                  /var/lib/cinder/mnt
 COPY --from=dependency_build /usr/local/lib /usr/local/lib
 COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rados.cpython-312-x86_64-linux-gnu.so /var/lib/openstack/lib/python3.12/site-packages/rados.cpython-312-x86_64-linux-gnu.so
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd.cpython-312-x86_64-linux-gnu.so /var/lib/openstack/lib/python3.12/site-packages/rbd.cpython-312-x86_64-linux-gnu.so
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd/*.cpython*.so /var/lib/openstack/lib/python3.12/site-packages/
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd/*.cpython*.pyd /var/lib/openstack/lib/python3.12/site-packages/
 # Set the environment variables for the cinder venv
-ENV PATH="/usr/local/bin:/var/lib/openstack/bin:$PATH"
+ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
