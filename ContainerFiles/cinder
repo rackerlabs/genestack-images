@@ -56,7 +56,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for
 COPY --from=base /var/lib/openstack /var/lib/openstack
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ceph-common python3-rbd python3-rados python3-cephfs python3-ceph-common python3-ceph-argparse libxml2 multipath-tools open-iscsi qemu-utils lsscsi nvme-cli sudo nfs-common \
+  && apt-get install -y --no-install-recommends ceph-common python3-rbd python3-rados python3-cephfs python3-ceph-common python3-ceph-argparse libxml2 multipath-tools open-iscsi qemu-utils lsscsi nvme-cli sudo nfs-common uwsgi \
   && apt-get purge -y --auto-remove \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
