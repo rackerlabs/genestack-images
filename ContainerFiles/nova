@@ -2,8 +2,6 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-ARG CEPH_TAG=v19.2.3-latest
-FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:${CEPH_TAG} AS ceph_build
 ARG BUILT_TAG=v1.56.1-latest
 FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG} AS dependency_build
 ARG OS_VERSION=master
@@ -40,14 +38,17 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
-                                       git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
-                                       PyMySQL \
-                                       libvirt-python \
-                                       novnc \
-                                       python-memcached \
-                                       websockify \
-                                       uwsgi
+                                        git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
+                                        git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
+                                        PyMySQL \
+                                        libvirt-python \
+                                        novnc \
+                                        python-memcached \
+                                        python-rados \
+                                        python-rbd \
+                                        python-cephfs \
+                                        websockify \
+                                        uwsgi
 
 RUN git clone --branch ${NOVNC_VERSION} https://github.com/novnc/noVNC /usr/share/novnc
 RUN rm -rf /usr/share/novnc/.git
@@ -72,8 +73,6 @@ LABEL org.opencontainers.image.name="nova"
 LABEL org.opencontainers.image.description="OpenStack Service (nova) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 COPY --from=dependency_build /usr/share/novnc /usr/share/novnc
-COPY --from=ceph_build /usr/local/lib /usr/local/lib
-COPY --from=ceph_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y ceph-common \
