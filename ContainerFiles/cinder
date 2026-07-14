@@ -2,15 +2,10 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:v19.2.3-latest AS ceph_build
-
-ARG VENV_TAG=3.12-latest
-FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:v19.2.3-latest AS dependency_build
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
-COPY --from=ceph_build /usr/local/lib /usr/local/lib
-COPY --from=ceph_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -38,7 +33,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                python3-pip \
                                                ssl-cert \
                                                xmlsec1 \
-                                               ceph-common
+                                               ceph-common \
+  && pip install cython pyyaml packaging --upgrade \
+  && pip install --no-build-isolation --no-cache-dir \
+                  python-rados \
+                  python-rbd
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/cinder.git@${OS_VERSION}#egg=cinder \
                                        cryptography \
@@ -67,8 +66,8 @@ LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="cinder"
 LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for the enterprise."
-COPY --from=ceph_build /usr/local/lib /usr/local/lib
-COPY --from=ceph_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+COPY --from=dependency_build /usr/local/lib /usr/local/lib
+COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 COPY --from=dependency_build /usr/local/lib64/ /usr/local/lib64/
 RUN export DEBIAN_FRONTEND=noninteractive \
@@ -87,7 +86,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s /var/lib/openstack/etc/cinder /etc/cinder \
   && chown cinder:cinder -h /etc/cinder \
   && chown -R cinder:cinder /var/lib/openstack/etc/cinder \
-                            /var/lib/cinder/mnt
+                                /var/lib/cinder/mnt
 # Set the environment variables for the cinder venv
 ENV PATH="/usr/local/bin:/var/lib/openstack/bin:$PATH"
 # Set the working directory
