@@ -12,28 +12,14 @@ ARG OS_CONSTRAINTS
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-                                               bash \
-                                               brotli \
-                                               build-essential \
-                                               curl \
-                                               docutils-common \
-                                               gettext \
-                                               git \
-                                               libffi-dev \
-                                               libjs-sphinxdoc \
-                                               libjs-underscore \
-                                               libldap2-dev \
-                                               libpq-dev \
-                                               libsasl2-dev \
-                                               libssl-dev \
-                                               libsystemd-dev \
-                                               libxml2-dev \
-                                               libxslt1-dev \
-                                               libxslt1.1 \
-                                               pkg-config \
-                                               ssl-cert \
-                                               xmlsec1 \
-               && rm -rf /var/lib/apt/lists/*
+               build-essential \
+               git \
+               libffi-dev \
+               libssl-dev \
+               libxml2-dev \
+               libxslt1-dev \
+               python3-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv --system-site-packages /var/lib/openstack \
   && /var/lib/openstack/bin/pip install --upgrade pip uv \
@@ -68,7 +54,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for
 COPY --from=base /var/lib/openstack /var/lib/openstack
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ceph-common python3-rbd python3-rados python3-cephfs python3-ceph-common python3-ceph-argparse libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils lsscsi nvme-cli sudo nfs-common \
+  && apt-get install -y --no-install-recommends ceph-common python3-rbd python3-rados python3-cephfs python3-ceph-common python3-ceph-argparse libxml2 multipath-tools open-iscsi qemu-utils lsscsi nvme-cli sudo nfs-common \
   && apt-get purge -y --auto-remove \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
