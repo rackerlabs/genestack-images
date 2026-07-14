@@ -61,7 +61,6 @@ LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for
 COPY --from=dependency_build /usr/local/lib /usr/local/lib
 COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-COPY --from=dependency_build /usr/local/lib64/ /usr/local/lib64/
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y ceph-common libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils systemctl lsscsi nvme-cli sudo nfs-common \
