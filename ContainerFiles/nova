@@ -44,7 +44,6 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        libvirt-python \
                                        novnc \
                                        python-memcached \
-                                       rbd \
                                        websockify \
                                        uwsgi
 
