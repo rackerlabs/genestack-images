@@ -18,9 +18,13 @@ RUN apt-get update \
                libssl-dev \
                libxml2-dev \
                libxslt1-dev \
+               libldap2-dev \
+               libsasl2-dev \
                python3 \
                python3-venv \
                python3-pip \
+               python3-uwsgi-plugin \
+               uwsgi \
   && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv --system-site-packages /var/lib/openstack \
@@ -33,8 +37,7 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
                                                python-memcached \
                                                os-brick \
                                                purestorage \
-                                               py-pure-client \
-                                                uwsgi
+                                               py-pure-client
 
 COPY scripts/cinder-cve-patching.sh /opt/
 RUN bash /opt/cinder-cve-patching.sh
