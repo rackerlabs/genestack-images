@@ -58,8 +58,6 @@ LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="cinder"
 LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for the enterprise."
-COPY --from=dependency_build /usr/local/lib /usr/local/lib
-COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
@@ -77,7 +75,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s /var/lib/openstack/etc/cinder /etc/cinder \
   && chown cinder:cinder -h /etc/cinder \
   && chown -R cinder:cinder /var/lib/openstack/etc/cinder \
-                                /var/lib/cinder/mnt
+                                 /var/lib/cinder/mnt
+COPY --from=dependency_build /usr/local/lib /usr/local/lib
+COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 # Set the environment variables for the cinder venv
 ENV PATH="/usr/local/bin:/var/lib/openstack/bin:$PATH"
 # Set the working directory
