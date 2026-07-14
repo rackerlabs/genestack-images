@@ -48,8 +48,8 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
                                                websockify \
                                                uwsgi
 
-RUN mkdir -p /usr/share/novnc /tmp/novnc-tmp \
-  && git --no-replace-objects clone --branch ${NOVNC_VERSION} --depth 1 https://github.com/novnc/noVNC /tmp/novnc-tmp/noVNC \
+RUN mkdir -p /tmp/novnc-tmp \
+  && git clone --branch ${NOVNC_VERSION} --depth 1 https://github.com/novnc/noVNC /tmp/novnc-tmp/noVNC \
   && cp -r /tmp/novnc-tmp/noVNC/* /usr/share/novnc/ \
   && rm -rf /tmp/novnc-tmp
 RUN cp -v /usr/share/novnc/vnc_lite.html /usr/share/novnc/vnc_auto.html
