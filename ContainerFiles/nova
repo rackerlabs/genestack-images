@@ -2,6 +2,8 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
+ARG CEPH_TAG=v19.2.3-latest
+FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:${CEPH_TAG} AS ceph_build
 ARG BUILT_TAG=v1.56.1-latest
 FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG} AS dependency_build
 ARG OS_VERSION=master
@@ -70,6 +72,8 @@ LABEL org.opencontainers.image.name="nova"
 LABEL org.opencontainers.image.description="OpenStack Service (nova) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 COPY --from=dependency_build /usr/share/novnc /usr/share/novnc
+COPY --from=ceph_build /usr/local/lib /usr/local/lib
+COPY --from=ceph_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y ceph-common \
