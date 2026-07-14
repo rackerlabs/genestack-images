@@ -7,19 +7,18 @@ FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependenc
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+ARG CEPH_VERSION=v19.2.3
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
                                              bash \
                                              brotli \
                                              build-essential \
-                                             ceph-common \
                                              cmake \
                                              curl \
                                              docutils-common \
                                              gettext \
                                              gir1.2-glib-2.0 \
-                                             git \
                                              libcairo2-dev \
                                              libffi-dev \
                                              libgirepository1.0-dev \
@@ -33,10 +32,23 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libxml2-dev \
                                              libxslt1-dev \
                                              pkg-config \
-                                             python3-rados \
-                                             python3-rbd \
                                              ssl-cert \
-                                             xmlsec1
+                                             xmlsec1 \
+  && git clone --depth 1 --branch ${CEPH_VERSION} https://github.com/ceph/ceph.git /opt/ceph-src \
+  && cd /opt/ceph-src \
+  && /var/lib/openstack/bin/pip install cython sphinx pyyaml packaging --upgrade --force \
+  && ./install-deps.sh \
+  && ./do_cmake.sh -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+                   -DWITH_MANPAGE=OFF \
+                   -DWITH_MGR_DASHBOARD_FRONTEND=OFF \
+                   -DWITH_CEPH_DEBUG_MUTEX=OFF \
+                   -DWITH_CEPHFS=OFF \
+                   -DWITH_MGR=OFF \
+                   -DWITH_TESTS=OFF \
+                   -DWITH_LTTNG=OFF \
+  && cd /opt/ceph-src/build \
+  && ninja -j $(nproc) rbd rados \
+  && ninja install
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/cinder.git@${OS_VERSION}#egg=cinder \
                                        cryptography \
@@ -66,9 +78,11 @@ LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="cinder"
 LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=dependency_build /usr/local/lib64/ /usr/local/lib64/
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y ceph-common libxml2 multipath-tools open-iscsi python3-rados python3-rbd qemu-block-extra qemu-utils systemctl lsscsi nvme-cli sudo nfs-common \
+  && apt-get install --no-install-recommends -y ceph-common libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils systemctl lsscsi nvme-cli sudo nfs-common \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
@@ -84,8 +98,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown -R cinder:cinder /var/lib/openstack/etc/cinder \
                             /var/lib/cinder/mnt
 # Set the environment variables for the cinder venv
-ENV PATH="/var/lib/openstack/bin:$PATH"
-ENV PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
+ENV PATH="/usr/local/bin:/var/lib/openstack/bin:$PATH"
 # Set the working directory
 WORKDIR /var/lib/openstack
 # Set the user and group to match the original build
