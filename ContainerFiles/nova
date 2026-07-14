@@ -44,6 +44,7 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
                                        libvirt-python \
                                        novnc \
                                        python-memcached \
+                                       rbd \
                                        websockify \
                                        uwsgi
 
@@ -72,27 +73,33 @@ COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 COPY --from=dependency_build /usr/share/novnc /usr/share/novnc
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y dosfstools \
-                                                cryptsetup \
-                                                genisoimage \
-                                                gir1.2-libosinfo-1.0 \
-                                                iptables \
-                                                kpartx \
-                                                ksmtuned \
-                                                libgirepository-1.0-1 \
-                                                libguestfs0 \
-                                                libosinfo-bin \
-                                                libxml2 \
-                                                multipath-tools \
-                                                netcat-openbsd \
-                                                nfs-common \
-                                                nvme-cli \
-                                                lsscsi \
-                                                open-iscsi \
-                                                ovmf \
-                                                sysfsutils \
-                                                sudo \
-                                                ssh \
+  && apt-get install --no-install-recommends -y ceph-common \
+                                                 cryptsetup \
+                                                 dosfstools \
+                                                 genisoimage \
+                                                 gir1.2-libosinfo-1.0 \
+                                                 iptables \
+                                                 kpartx \
+                                                 ksmtuned \
+                                                 libgirepository-1.0-1 \
+                                                 libguestfs0 \
+                                                 libosinfo-bin \
+                                                 libxml2 \
+                                                 multipath-tools \
+                                                 netcat-openbsd \
+                                                 nfs-common \
+                                                 nvme-cli \
+                                                 lsscsi \
+                                                 open-iscsi \
+                                                 ovmf \
+                                                 python3-ceph-argparse \
+                                                 python3-ceph-common \
+                                                 python3-cephfs \
+                                                 python3-rados \
+                                                 python3-rbd \
+                                                 sysfsutils \
+                                                 sudo \
+                                                 ssh \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
