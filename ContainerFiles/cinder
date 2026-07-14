@@ -2,13 +2,16 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
-FROM ghcr.io/rackerlabs/genestack-images/ceph-libs:v19.2.3-latest AS dependency_build
-ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y \
+
+FROM ubuntu:noble AS base
+
+ARG OS_VERSION
+ARG OS_CONSTRAINTS
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
                                                bash \
                                                brotli \
                                                build-essential \
@@ -29,17 +32,21 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                libxslt1.1 \
                                                pkg-config \
                                                ssl-cert \
-                                               xmlsec1
-RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                       git+https://opendev.org/openstack/cinder.git@${OS_VERSION}#egg=cinder \
-                                       cryptography \
-                                       ecdsa \
-                                       PyMySQL \
-                                       python-memcached \
-                                       os-brick \
-                                       purestorage \
-                                       py-pure-client \
-                                       uwsgi
+                                               xmlsec1 \
+               && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv --system-site-packages /var/lib/openstack \
+  && /var/lib/openstack/bin/pip install --upgrade pip uv \
+  && /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+                                               git+https://opendev.org/openstack/cinder.git@${OS_VERSION}#egg=cinder \
+                                               cryptography \
+                                               ecdsa \
+                                               PyMySQL \
+                                               python-memcached \
+                                               os-brick \
+                                               purestorage \
+                                               py-pure-client \
+                                               uwsgi
 
 COPY scripts/cinder-cve-patching.sh /opt/
 RUN bash /opt/cinder-cve-patching.sh
@@ -53,16 +60,16 @@ RUN find / -name '*.pyc' -delete \
   && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA || true
 
 
-FROM python:3.12-slim-bookworm
+FROM ubuntu:noble
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="cinder"
 LABEL org.opencontainers.image.description="OpenStack Service (cinder) built for the enterprise."
-COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y ceph-common libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils systemctl lsscsi nvme-cli sudo nfs-common \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+COPY --from=base /var/lib/openstack /var/lib/openstack
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ceph-common python3-rbd python3-rados python3-cephfs python3-ceph-common python3-ceph-argparse libxml2 multipath-tools open-iscsi qemu-block-extra qemu-utils lsscsi nvme-cli sudo nfs-common \
+  && apt-get purge -y --auto-remove \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
   && find / -name '*.pyc' -delete \
@@ -76,12 +83,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown cinder:cinder -h /etc/cinder \
   && chown -R cinder:cinder /var/lib/openstack/etc/cinder \
                                  /var/lib/cinder/mnt
-COPY --from=dependency_build /usr/local/lib /usr/local/lib
-COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
-COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rados.cpython-312-x86_64-linux-gnu.so /var/lib/openstack/lib/python3.12/site-packages/
-COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd.cpython-312-x86_64-linux-gnu.so /var/lib/openstack/lib/python3.12/site-packages/
-COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rados-2.0.0-py3.12.egg-info /var/lib/openstack/lib/python3.12/site-packages/
-COPY --from=dependency_build /usr/local/lib/python3.12/site-packages/rbd-2.0.0-py3.12.egg-info /var/lib/openstack/lib/python3.12/site-packages/
+
 # Set the environment variables for the cinder venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory
