@@ -21,7 +21,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert \
                                              xmlsec1
 
-
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/ironic-prometheus-exporter.git@${OS_VERSION}#egg=ironic-prometheus-exporter \
                                        gunicorn
@@ -65,14 +64,13 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/var/lib/openstack/bin:$PATH"
+
 # Set the working directory
 WORKDIR /var/lib/openstack
+
 # Set the user and group to match the original build
 USER 42424:42424
-# Expose port from environment variable, default to 9608
-ARG EXPORTER_PORT=9608
-ENV EXPORTER_PORT=${EXPORTER_PORT}
-EXPOSE ${EXPORTER_PORT}
 
-# Run the exporter
-CMD ["sh", "-c", "exec gunicorn -b 0.0.0.0:${EXPORTER_PORT} -w 4 ironic_prometheus_exporter.app.wsgi:application"]
+# Expose metrics endpoint, default to 9608
+EXPOSE 9608
+
