@@ -33,6 +33,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/ironic.git@${OS_VERSION}#egg=ironic \
+                                       git+https://opendev.org/openstack/ironic-prometheus-exporter.git@${OS_VERSION}#egg=ironic-prometheus-exporter \
                                        PyMySQL \
                                        python-memcached \
                                        sushy \

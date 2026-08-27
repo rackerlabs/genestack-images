@@ -149,6 +149,7 @@ nav:
       - Ironic Conductor: containers/ironic-conductor.md
       - Ironic Inspector: containers/ironic-inspector.md
       - Ironic PXE: containers/ironic-pxe.md
+      - Ironic Prometheus Exporter: containers/ironic-prometheus-exporter.md
       - Keystone: containers/keystone.md
       - Kubectl: containers/kubectl.md
       - Kube-OVN: containers/kube-ovn.md
