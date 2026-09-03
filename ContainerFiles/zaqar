@@ -42,6 +42,9 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
 COPY scripts/zaqar-cve-patching.sh /opt/
 RUN bash /opt/zaqar-cve-patching.sh
 
+COPY scripts/zaqar-billing-middleware.py /opt/
+RUN cp /opt/zaqar-billing-middleware.py /var/lib/openstack/lib/python3.12/site-packages/billing_middleware.py
+
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
