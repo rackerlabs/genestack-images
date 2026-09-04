@@ -1,0 +1,57 @@
+# syntax = docker/dockerfile:1
+
+FROM python:3.12-slim-bookworm
+
+ARG KUBECTL_VERSION=v1.34.3
+ARG KUBECTL_KO_REF=release-1.12
+ARG GENESTACK_REF=main
+ARG TARGETARCH=amd64
+ARG CACHEBUST=0
+
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="ops-tools"
+LABEL org.opencontainers.image.description="Genestack operator diagnostics and remediation tools."
+LABEL org.opencontainers.image.title="ops-tools"
+LABEL genestack.ref="${GENESTACK_REF}"
+LABEL kubectl.version="${KUBECTL_VERSION}"
+LABEL kubectl-ko.ref="${KUBECTL_KO_REF}"
+
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+       bash \
+       ca-certificates \
+       curl \
+       jq \
+       openssh-client \
+       python3-openstackclient \
+  && curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
+  && curl -fsSLo /usr/local/bin/kubectl-ko "https://raw.githubusercontent.com/kubeovn/kube-ovn/refs/heads/${KUBECTL_KO_REF}/dist/images/kubectl-ko" \
+  && chmod +x /usr/local/bin/kubectl \
+  && chmod +x /usr/local/bin/kubectl-ko \
+  && apt-get purge -y --auto-remove curl \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt/* \
+  && groupadd --system --gid 42424 ops-tools \
+  && useradd --system --gid 42424 --uid 42424 --shell /usr/sbin/nologin --create-home --home /var/lib/ops-tools ops-tools \
+  && mkdir -p /opt/genestack/ops-tools /var/lib/ops-tools/.kube \
+  && chown -R ops-tools:ops-tools /opt/genestack/ops-tools /var/lib/ops-tools
+
+COPY scripts/ops-tools-cve-patching.sh /opt/
+RUN bash /opt/ops-tools-cve-patching.sh
+
+COPY --from=genestack-source /ops-tools/ /opt/genestack/ops-tools/
+
+RUN find /opt/genestack/ops-tools -type f \( -name '*.py' -o -name '*.sh' \) -exec chmod 0755 {} + \
+  && python -m compileall -q /opt/genestack/ops-tools \
+  && kubectl version --client=true \
+  && command -v kubectl-ko >/dev/null \
+  && test -x /usr/local/bin/kubectl-ko \
+  && jq --version
+
+USER 42424:42424
+WORKDIR /var/lib/ops-tools
+
+CMD ["python", "-c", "from pathlib import Path; root=Path('/opt/genestack/ops-tools'); print('Available ops tools:'); [print(str(p.relative_to(root))) for p in sorted(root.glob('*/*')) if p.suffix in ('.py', '.sh') and not p.name.startswith('test_') and p.name != 'ovn_ops.py']"]
