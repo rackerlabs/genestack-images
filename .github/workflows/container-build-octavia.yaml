@@ -54,7 +54,7 @@ env:
   openstack_constraints: >
     ["stable/2025.1", "stable/2026.1"]
   ovnPluginTag: >
-    ["8.0.0"]
+    ["8.0.0", "10.0.0"]
 
 jobs:
   init:
