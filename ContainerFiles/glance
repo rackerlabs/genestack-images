@@ -46,6 +46,9 @@ RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstac
 COPY scripts/glance-cve-patching.sh /opt/
 RUN bash /opt/glance-cve-patching.sh
 
+COPY scripts/glance-store-swift-segment-patch.sh /opt/
+RUN bash /opt/glance-store-swift-segment-patch.sh
+
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
