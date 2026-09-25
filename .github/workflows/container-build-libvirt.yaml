@@ -14,20 +14,46 @@ on:
     paths:
       - .github/workflows/container-build-libvirt.yaml
       - ContainerFiles/libvirt
+      - docs/containers/libvirt.md
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
+    inputs:
+      openstack-version:
+        description: 'Version of OpenStack to build against'
+        required: true
+        default: "stable/2025.1"
+        type: choice
+        options:
+          - stable/2025.1
+          - stable/2026.1
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/libvirt
   CATEGORY_NAME: libvirt
+  openstack_versions: >
+    ["stable/2025.1", "stable/2026.1"]
 
 jobs:
-  build-and-push-image:
+  init:
+    runs-on: ubuntu-latest
     outputs:
-      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
-      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
+      openstack-version: ${{ steps.generate-matrix.outputs.openstack_version }}
+    steps:
+      - name: generate-matrix
+        id: generate-matrix
+        run: |
+          if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
+            openstack_version="$(echo '${{ github.event.inputs.openstack-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
+          fi
+          echo "openstack_version=${openstack_version:-${{ env.openstack_versions }}}" >> $GITHUB_OUTPUT
+  build-and-push-image:
+    needs:
+      - init
+    strategy:
+      matrix:
+        openstack-version: ${{ fromJSON(needs.init.outputs.openstack-version) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -51,6 +77,12 @@ jobs:
         run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
       - name: Normalize image repository name
         run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Dynamically set OS_VERSION_PARSE environment variable
+        run: |
+          VERSION=$(echo -n "${{ matrix.openstack-version }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
+          echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
+          NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
+          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -64,6 +96,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            OS_VERSION=${{ matrix.openstack-version }}
             CACHEBUST=${{ github.sha }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
@@ -115,8 +148,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            OS_VERSION=${{ matrix.openstack-version }}
             CACHEBUST=${{ github.sha }}
