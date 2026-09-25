@@ -3,6 +3,7 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 # Stage 1: libguestfs_base
+ARG OS_VERSION=stable/2025.1
 ARG BUILT_TAG=v3.5.1-latest
 ARG BUILT_TAG_2=v1.56.1-latest
 FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
@@ -10,9 +11,20 @@ FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
 # Final Stage: dependency_build
 FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG_2}
 ARG CACHEBUST=0
+ARG OS_VERSION=stable/2025.1
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="libvirt"
+LABEL org.opencontainers.image.openstack.version="${OS_VERSION}"
+RUN set -eux; \
+  case "${OS_VERSION}" in \
+    stable/2025.1|2025.1|epoxy) OPENSTACK_RELEASE_CODENAME=epoxy ;; \
+    stable/2026.1|2026.1|gazpacho|gazapacho) OPENSTACK_RELEASE_CODENAME=gazpacho ;; \
+    *) echo "Unsupported OS_VERSION=${OS_VERSION}. Supported releases: stable/2025.1, stable/2026.1" >&2; exit 1 ;; \
+  esac; \
+  mkdir -p /etc/genestack; \
+  printf '%s\n' "${OS_VERSION}" > /etc/genestack/openstack-version; \
+  printf '%s\n' "${OPENSTACK_RELEASE_CODENAME}" > /etc/genestack/openstack-release
 COPY --from=dependency_build /usr/local /usr/local
 COPY --from=dependency_build /etc/openvswitch /etc/openvswitch
 COPY --from=dependency_build /var/lib/openvswitch /var/lib/openvswitch
@@ -30,25 +42,43 @@ RUN mkdir -p /etc/udev/rules.d \
   && getent group kvm \
   && echo 'KERNEL=="kvm", GROUP="929292", MODE="0660"' | tee /etc/udev/rules.d/99-genestack-kvm.rules \
   && export DEBIAN_FRONTEND=noninteractive \
+  && case "${OS_VERSION}" in \
+       stable/2025.1|2025.1|epoxy) \
+         DEBIAN_SUITE=bookworm; \
+         MIN_LIBVIRT_VERSION=8.0.0; \
+         MIN_QEMU_VERSION=6.2.0 \
+         ;; \
+       stable/2026.1|2026.1|gazpacho|gazapacho) \
+         DEBIAN_SUITE=bookworm-backports; \
+         MIN_LIBVIRT_VERSION=10.0.0; \
+         MIN_QEMU_VERSION=8.2.2; \
+         echo "deb http://deb.debian.org/debian bookworm-backports main" > /etc/apt/sources.list.d/bookworm-backports.list \
+         ;; \
+     esac \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y iproute2 \
-                                                iptables \
-                                                cgroup-tools \
-                                                dmidecode \
-                                                ebtables \
-                                                iproute2 \
-                                                ipxe-qemu \
-                                                kmod \
-                                                libvirt-clients \
-                                                libvirt-daemon-system \
-                                                openssh-client \
-                                                ovmf \
-                                                pm-utils \
-                                                qemu-block-extra \
-                                                qemu-efi \
-                                                qemu-efi-arm \
-                                                qemu-system \
-                                                qemu-utils \
+  && apt-get install --no-install-recommends -y -t "${DEBIAN_SUITE}" iproute2 \
+                                                                      iptables \
+                                                                      cgroup-tools \
+                                                                      dmidecode \
+                                                                      ebtables \
+                                                                      ipxe-qemu \
+                                                                      kmod \
+                                                                      libvirt-clients \
+                                                                      libvirt-daemon-system \
+                                                                      openssh-client \
+                                                                      ovmf \
+                                                                      pm-utils \
+                                                                      qemu-block-extra \
+                                                                      qemu-efi \
+                                                                      qemu-efi-arm \
+                                                                      qemu-system \
+                                                                      qemu-utils \
+  && LIBVIRT_VERSION="$(virsh --version)" \
+  && QEMU_VERSION="$(qemu-system-x86_64 --version | awk 'NR == 1 {print $4}')" \
+  && dpkg --compare-versions "${LIBVIRT_VERSION}" ge "${MIN_LIBVIRT_VERSION}" \
+  && dpkg --compare-versions "${QEMU_VERSION}" ge "${MIN_QEMU_VERSION}" \
+  && printf '%s\n' "${LIBVIRT_VERSION}" > /etc/genestack/libvirt-version \
+  && printf '%s\n' "${QEMU_VERSION}" > /etc/genestack/qemu-version \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
