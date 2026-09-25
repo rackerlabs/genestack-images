@@ -12,7 +12,7 @@ permissions:
 on:
   pull_request:
     paths:
-      - .github/workflows/container-build-ceph.yaml
+      - .github/workflows/container-build-ceph-client.yaml
       - ContainerFiles/ceph-libs
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC

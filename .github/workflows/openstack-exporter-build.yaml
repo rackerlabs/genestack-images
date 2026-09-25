@@ -5,7 +5,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/openstack-exporter-build.yaml
+      - ContainerFiles/openstack-exporter
+      - scripts/openstack-exporter-app/**
   pull_request:
+    paths:
+      - .github/workflows/openstack-exporter-build.yaml
+      - ContainerFiles/openstack-exporter
+      - scripts/openstack-exporter-app/**
 
 jobs:
   build-and-push:
