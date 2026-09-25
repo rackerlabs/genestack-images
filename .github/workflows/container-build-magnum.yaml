@@ -36,10 +36,11 @@ on:
       osCapiPluginVersion:
         description: 'Version of OpenStack Magnum CAPI Plugin to use'
         required: false
-        default: 'master'
+        default: '1.4.0'
         type: choice
         options:
           - master
+          - "1.4.0"
           - "1.2.1"
 
 env:
@@ -52,7 +53,7 @@ env:
   openstack_constraints: >
     ["stable/2025.1", "stable/2026.1"]
   osCapiPluginTag: >
-    ["1.2.1", "master"]
+    ["1.4.0", "1.2.1", "master"]
 
 jobs:
   init:
