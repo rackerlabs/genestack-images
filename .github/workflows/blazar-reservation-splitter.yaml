@@ -5,7 +5,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/blazar-reservation-splitter.yaml
+      - ContainerFiles/blazar-reservation-splitter
+      - scripts/blazar-reservation-splitter-app/**
   pull_request:
+    paths:
+      - .github/workflows/blazar-reservation-splitter.yaml
+      - ContainerFiles/blazar-reservation-splitter
+      - scripts/blazar-reservation-splitter-app/**
 
 jobs:
   build-and-push:

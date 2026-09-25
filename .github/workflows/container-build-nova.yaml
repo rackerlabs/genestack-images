@@ -14,6 +14,7 @@ on:
     paths:
       - .github/workflows/container-build-nova.yaml
       - ContainerFiles/nova
+      - dist/novnc.tar.gz
       - scripts/nova-cve-patching.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC

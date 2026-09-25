@@ -5,7 +5,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/barbican-exporter-build.yaml
+      - ContainerFiles/barbican-exporter
+      - scripts/barbican-exporter-app/**
   pull_request:
+    paths:
+      - .github/workflows/barbican-exporter-build.yaml
+      - ContainerFiles/barbican-exporter
+      - scripts/barbican-exporter-app/**
 
 jobs:
   build-and-push:
