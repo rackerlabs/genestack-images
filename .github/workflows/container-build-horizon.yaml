@@ -15,7 +15,6 @@ on:
       - .github/workflows/container-build-horizon.yaml
       - ContainerFiles/horizon
       - scripts/horizon-cve-patching.sh
-      - scripts/horizon-configure.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
