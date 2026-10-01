@@ -21,6 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libjs-sphinxdoc \
                                              libjs-underscore \
                                              libldap2-dev \
+                                             libpcre2-dev \
                                              libpq-dev \
                                              libsasl2-dev \
                                              libssl-dev \
@@ -34,7 +35,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/cloudkitty.git@${OS_VERSION}#egg=cloudkitty \
                                        PyMySQL \
+                                       cryptography \
+                                       pymemcache \
                                        python-memcached \
+                                       redis \
                                        uwsgi
 
 COPY scripts/cloudkitty-cve-patching.sh /opt/
@@ -57,7 +61,7 @@ LABEL org.opencontainers.image.description="OpenStack Service (cloudkitty) built
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y libxml2 \
+  && apt-get install --no-install-recommends -y libpcre2-8-0 libxml2 \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* \
