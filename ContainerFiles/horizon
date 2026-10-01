@@ -36,7 +36,14 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN curl -so /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
 RUN sed -i '/^horizon.*/d' /tmp/upper-constraints.txt
 RUN sed -i '/^pyScss.*/d' /tmp/upper-constraints.txt
-RUN /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
+# NOTE: Several legacy XStatic sdists (e.g. XStatic-Angular-Schema-Form) call
+# pkg_resources.declare_namespace() in setup.py at build time. setuptools>=81
+# no longer vendors pkg_resources, so the isolated PEP 517 build env fails with
+# "ModuleNotFoundError: No module named 'pkg_resources'". Pre-install a
+# setuptools that still ships pkg_resources and disable build isolation so these
+# legacy packages can build against it.
+RUN /var/lib/openstack/bin/pip install "setuptools<81" wheel pbr
+RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/upper-constraints.txt \
                                        git+https://opendev.org/openstack/horizon.git@${OS_VERSION}#egg=horizon \
                                        git+https://opendev.org/openstack/adjutant-ui@${OS_VERSION}#egg=adjutant-ui \
                                        git+https://opendev.org/openstack/designate-dashboard@${OS_VERSION}#egg=designate_dashboard \
