@@ -16,6 +16,7 @@ RUN curl -fsSL -o /tmp/upper-constraints.txt https://opendev.org/openstack/requi
                                         "numpy>=2.3.2,<3" \
                                         PyMySQL \
                                         pymemcache \
+                                        python-memcached \
                                         SQLAlchemy \
                                         uwsgi \
                                         cffi \
