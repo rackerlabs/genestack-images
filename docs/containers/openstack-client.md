@@ -4,10 +4,23 @@ The `openstack-client` image is built from [ContainerFiles/openstack-client](htt
 
 This container packages the openstack-client service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for integration.
 
-The build accepts an OpenStack release selector and installs all client
-packages against that release's upper constraints. Supported values are
-`stable/2025.1` for Epoxy and `stable/2026.1` for Gazpacho. Published images
-use release-qualified tags such as `2025.1-latest` and `2026.1-latest`.
+The build installs all client packages against the upper constraints of the
+OpenStack release it targets. Supported `OS_VERSION` values are `stable/2025.1`
+for Epoxy and `stable/2026.1` for Gazpacho.
+
+`OS_VERSION` has no default. The release is supplied by the build workflow,
+which builds every supported release on a matrix. A build that does not pass
+`OS_VERSION` fails.
+
+Published tags carry the release and the `python-openstackclient` version
+resolved during the build:
+
+| Tag | Meaning |
+| --- | --- |
+| `2025.1-latest` | newest build for the release |
+| `2025.1-7.5.1` | the specific client release version |
+| `2025.1-7.5.1-1758830017` | immutable per-build record |
+| `2025.1-1758830017` | same build, retained for compatibility |
 
 ``` mermaid
 graph LR
@@ -29,7 +42,7 @@ graph LR
 | --- | --- |
 | VENV_TAG | 3.12-latest |
 | CACHEBUST | 0 |
-| OS_VERSION | stable/2025.1 |
+| OS_VERSION | none, required |
 
 ??? example "Build Command"
 
