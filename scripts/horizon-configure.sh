@@ -96,19 +96,21 @@ for pkg_dir in "${SITE_PACKAGES}"/*/; do
     fi
 done
 
-# Build-only settings module: import the real horizon settings, then force the
-# offline-compress knobs and STATIC_ROOT needed to generate assets. This lives
-# in a throwaway dir on PYTHONPATH so nothing leaks into the runtime image's
-# local_settings (genestack supplies its own local_settings at deploy time).
-BUILD_SETTINGS_DIR="$(mktemp -d)"
-cat > "${BUILD_SETTINGS_DIR}/_horizon_build_settings.py" <<EOF
-from openstack_dashboard.settings import *  # noqa: F401,F403
+# Force the offline-compress knobs and STATIC_ROOT needed to generate assets.
+# These go into a build-only local_settings.d snippet: Horizon's settings.py
+# exec's local_settings.d/*.py into its own fully-populated namespace at the end
+# of settings load, so this correctly layers on top of all computed defaults
+# (unlike a wrapper settings module, which would miss attributes set up by
+# Horizon's own settings machinery). The snippet is removed after the build so
+# nothing leaks into the runtime image (genestack supplies its own
+# local_settings at deploy time).
+BUILD_SNIPPET="${LOCAL_SETTINGS_D}/_9999_build_static.py"
+cat > "${BUILD_SNIPPET}" <<EOF
 COMPRESS_OFFLINE = True
 STATIC_ROOT = "${STATIC_ROOT}"
 EOF
 
-export PYTHONPATH="${BUILD_SETTINGS_DIR}:${PYTHONPATH:-}"
-export DJANGO_SETTINGS_MODULE="_horizon_build_settings"
+export DJANGO_SETTINGS_MODULE="openstack_dashboard.settings"
 
 # horizon's manage.py lives at the sdist root and is NOT installed into
 # site-packages, so invoke Django's admin entrypoint directly. collectstatic and
@@ -119,7 +121,7 @@ django-admin collectstatic --noinput --clear
 echo "==> Generating offline-compressed assets"
 django-admin compress --force
 
-rm -rf "${BUILD_SETTINGS_DIR}"
+rm -f "${BUILD_SNIPPET}"
 
 # A persisted SECRET_KEY or stale lock from the build must not leak into the
 # image; Horizon regenerates/handles these at runtime.
