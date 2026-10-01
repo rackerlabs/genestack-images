@@ -57,6 +57,7 @@ RUN set -eux; \
                                        oslo.versionedobjects \
                                        PasteDeploy \
                                        aodhclient \
+                                       pyMySql \
                                        python-barbicanclient \
                                        python-blazarclient \
                                        python-cinderclient \
