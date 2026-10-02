@@ -27,6 +27,7 @@ graph LR
 | CACHEBUST | 0 |
 | OS_VERSION | master |
 | OS_CONSTRAINTS | master |
+| BARBICAN_UI_REF | refs/changes/30/1006630/7 |
 
 ??? example "Build Command"
 

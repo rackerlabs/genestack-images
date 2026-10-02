@@ -7,6 +7,11 @@ FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependenc
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+# NOTE: barbican-ui has no stable branches or releases, and its master is a
+#       non-functional stub. This pins the upstream rewrite chain under review
+#       (https://review.opendev.org/c/openstack/barbican-ui/+/1006630, ps7).
+#       Gerrit patchset refs are immutable. Unmerged upstream code: lab use.
+ARG BARBICAN_UI_REF=refs/changes/30/1006630/7
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -57,6 +62,7 @@ RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/up
                                        git+https://opendev.org/openstack/neutron-vpnaas-dashboard@${OS_VERSION}#egg=neutron_vpnaas_dashboard \
                                        git+https://opendev.org/openstack/neutron-fwaas-dashboard@${OS_VERSION}#egg=neutron_fwaas_dashboard \
                                        git+https://opendev.org/openstack/octavia-dashboard@${OS_VERSION}#egg=octavia_dashboard \
+                                       git+https://opendev.org/openstack/barbican-ui@${BARBICAN_UI_REF}#egg=barbican-ui \
                                        PyMySQL \
                                        pymemcache \
                                        python-memcached
