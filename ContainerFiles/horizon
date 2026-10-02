@@ -62,6 +62,9 @@ RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/up
                                        git+https://opendev.org/openstack/neutron-vpnaas-dashboard@${OS_VERSION}#egg=neutron_vpnaas_dashboard \
                                        git+https://opendev.org/openstack/neutron-fwaas-dashboard@${OS_VERSION}#egg=neutron_fwaas_dashboard \
                                        git+https://opendev.org/openstack/octavia-dashboard@${OS_VERSION}#egg=octavia_dashboard \
+                                       git+https://opendev.org/openstack/freezer-web-ui@${OS_VERSION}#egg=freezer-web-ui \
+                                       git+https://opendev.org/openstack/trove-dashboard@${OS_VERSION}#egg=trove_dashboard \
+                                       git+https://opendev.org/openstack/blazar-dashboard@${OS_VERSION}#egg=blazar_dashboard \
                                        git+https://opendev.org/openstack/barbican-ui@${BARBICAN_UI_REF}#egg=barbican-ui \
                                        PyMySQL \
                                        pymemcache \
