@@ -108,6 +108,28 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.sha }}
+      - name: Smoke test image
+        # Runs as root to mirror the openstack-helm horizon container
+        # (runAsUser: 0). Gates the publish step on schedule/dispatch runs.
+        run: |
+          docker run --rm -i --user 0 --entrypoint /bin/bash "${IMAGE_NAME}:local" -s <<'EOF'
+          set -euo pipefail
+          echo "==> vhost symlink used by the openstack-helm chart"
+          test -L /etc/apache2/sites-enabled/000-default.conf
+          test -e /etc/apache2/sites-enabled/000-default.conf
+          echo "==> horizon imports"
+          python -c "import django, openstack_dashboard; print('Django', django.get_version())"
+          echo "==> apache config syntax"
+          apache2ctl -t
+          echo "==> no plugin panels pre-linked (the chart links extra_panels at startup)"
+          SITE_PACKAGES=$(python -c "from sysconfig import get_path; print(get_path('platlib'))")
+          linked=$(find "${SITE_PACKAGES}/openstack_dashboard/local/enabled" -name '_[1-9]*.py' | wc -l)
+          if [ "${linked}" -ne 0 ]; then
+            echo "ERROR: ${linked} panel file(s) pre-linked in openstack_dashboard/local/enabled"
+            exit 1
+          fi
+          echo "==> smoke test passed"
+          EOF
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}

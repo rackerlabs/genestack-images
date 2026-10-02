@@ -89,7 +89,13 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && mkdir -p /var/lib/openstack/etc/horizon \
   && ln -s /var/lib/openstack/etc/horizon /etc/horizon \
   && chown horizon:horizon -h /etc/horizon \
-  && chown -R horizon:horizon /var/lib/openstack/etc/horizon
+  && chown -R horizon:horizon /var/lib/openstack/etc/horizon \
+  && mkdir -p /etc/apache2/sites-enabled \
+  && ln -sf ../sites-available/000-default.conf /etc/apache2/sites-enabled/000-default.conf
+# NOTE: The apache base image removes sites-enabled/000-default.conf. The
+#       openstack-helm horizon chart mounts its vhost at
+#       sites-available/000-default.conf and relies on this default symlink to
+#       activate it, so it is restored here for horizon only.
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 USER 42424:42424
