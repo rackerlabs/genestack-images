@@ -62,8 +62,6 @@ RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/up
                                        python-memcached
 COPY scripts/horizon-cve-patching.sh /opt/
 RUN bash /opt/horizon-cve-patching.sh
-COPY scripts/horizon-configure.sh /opt/
-RUN bash /opt/horizon-configure.sh
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
