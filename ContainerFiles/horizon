@@ -62,6 +62,16 @@ RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/up
                                        python-memcached
 COPY scripts/horizon-cve-patching.sh /opt/
 RUN bash /opt/horizon-cve-patching.sh
+# NOTE: The openstack-helm horizon chart runs `manage.py compilemessages` inside
+#       every extra_panels package at startup. Django aborts with "This script
+#       should be run from the Django Git checkout..." when it finds no locale/
+#       directory, and some plugins ship no translations (masakaridashboard,
+#       mistraldashboard, adjutant_ui). An empty locale/ makes it a no-op.
+RUN for pkg in /var/lib/openstack/lib/python*/site-packages/*/; do \
+      if [ -d "${pkg}enabled" ] || [ -d "${pkg}local/enabled" ]; then \
+        [ -d "${pkg}locale" ] || mkdir -p "${pkg}locale"; \
+      fi; \
+    done
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \

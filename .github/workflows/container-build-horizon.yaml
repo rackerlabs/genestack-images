@@ -128,6 +128,14 @@ jobs:
             echo "ERROR: ${linked} panel file(s) pre-linked in openstack_dashboard/local/enabled"
             exit 1
           fi
+          echo "==> compilemessages in every plugin (the chart runs this for each extra_panels entry)"
+          export DJANGO_SETTINGS_MODULE=openstack_dashboard.settings
+          for pkg in "${SITE_PACKAGES}"/*/; do
+            if [ -d "${pkg}enabled" ] || [ -d "${pkg}local/enabled" ]; then
+              echo "    $(basename "${pkg}")"
+              (cd "${pkg}" && django-admin compilemessages > /dev/null)
+            fi
+          done
           echo "==> smoke test passed"
           EOF
       - name: Run Trivy vulnerability scanner
