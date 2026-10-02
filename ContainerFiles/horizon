@@ -7,10 +7,6 @@ FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependenc
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
-# NOTE: barbican-ui has no stable branches or releases, and its master is a
-#       non-functional stub. This pins the upstream rewrite chain under review
-#       (https://review.opendev.org/c/openstack/barbican-ui/+/1006630, ps7).
-#       Gerrit patchset refs are immutable. Unmerged upstream code: lab use.
 ARG BARBICAN_UI_REF=refs/changes/30/1006630/7
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
@@ -71,11 +67,6 @@ RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/up
                                        python-memcached
 COPY scripts/horizon-cve-patching.sh /opt/
 RUN bash /opt/horizon-cve-patching.sh
-# NOTE: The openstack-helm horizon chart runs `manage.py compilemessages` inside
-#       every extra_panels package at startup. Django aborts with "This script
-#       should be run from the Django Git checkout..." when it finds no locale/
-#       directory, and some plugins ship no translations (masakaridashboard,
-#       mistraldashboard, adjutant_ui). An empty locale/ makes it a no-op.
 RUN for pkg in /var/lib/openstack/lib/python*/site-packages/*/; do \
       if [ -d "${pkg}enabled" ] || [ -d "${pkg}local/enabled" ]; then \
         [ -d "${pkg}locale" ] || mkdir -p "${pkg}locale"; \
@@ -111,10 +102,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && chown -R horizon:horizon /var/lib/openstack/etc/horizon \
   && mkdir -p /etc/apache2/sites-enabled \
   && ln -sf ../sites-available/000-default.conf /etc/apache2/sites-enabled/000-default.conf
-# NOTE: The apache base image removes sites-enabled/000-default.conf. The
-#       openstack-helm horizon chart mounts its vhost at
-#       sites-available/000-default.conf and relies on this default symlink to
-#       activate it, so it is restored here for horizon only.
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 USER 42424:42424
