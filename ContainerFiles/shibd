@@ -1,47 +1,111 @@
-# syntax = docker/dockerfile:1
-# This Dockerfile uses multi-stage build to customize DEV and PROD images:
-# https://docs.docker.com/develop/develop-images/multistage-build/
+# syntax=docker/dockerfile:1
 
-FROM debian:trixie-slim
+ARG DEBIAN_IMAGE=debian:trixie-slim
+
+FROM ${DEBIAN_IMAGE} AS shibboleth_build
+ARG SHIBBOLETH_SP_UPSTREAM_VERSION=3.5.2+dfsg
+ARG SHIBBOLETH_SP_SOURCE_VERSION=3.5.2+dfsg-1
+ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack1
+ARG SHIBBOLETH_SP_DSC_SHA256=00e3b12e2da0e9240358c8e05c6f2d2ae7c413fd6175da5305ae4cc13f7d320a
+ARG SHIBBOLETH_SP_ORIG_SHA256=b945e9eb218d3679dbb390df1a2c16678e5679b269c728b7d08dc7b02487b03a
+ARG SHIBBOLETH_SP_DEBIAN_SHA256=8dce4a8d7fe513984dd7c82981a16885517313963f78b066d3b70df36e6114e2
+
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y \
+                                             apache2-dev \
+                                             build-essential \
+                                             ca-certificates \
+                                             curl \
+                                             cxxtest \
+                                             debhelper-compat \
+                                             devscripts \
+                                             dh-apache2 \
+                                             doxygen \
+                                             graphviz \
+                                             libboost-dev \
+                                             libfcgi-dev \
+                                             libkrb5-dev \
+                                             liblog4shib-dev \
+                                             libmemcached-dev \
+                                             libsaml-dev \
+                                             libsystemd-dev \
+                                             libxerces-c-dev \
+                                             libxml-security-c-dev \
+                                             libxmltooling-dev \
+                                             opensaml-schemas \
+                                             patch \
+                                             pkgconf \
+                                             unixodbc-dev \
+                                             xmltooling-schemas \
+                                             xz-utils \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN curl -fsSLO "https://deb.debian.org/debian/pool/main/s/shibboleth-sp/shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.dsc" \
+  && curl -fsSLO "https://deb.debian.org/debian/pool/main/s/shibboleth-sp/shibboleth-sp_${SHIBBOLETH_SP_UPSTREAM_VERSION}.orig.tar.xz" \
+  && curl -fsSLO "https://deb.debian.org/debian/pool/main/s/shibboleth-sp/shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.debian.tar.xz" \
+  && printf '%s  %s\n' \
+       "${SHIBBOLETH_SP_DSC_SHA256}" "shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.dsc" \
+       "${SHIBBOLETH_SP_ORIG_SHA256}" "shibboleth-sp_${SHIBBOLETH_SP_UPSTREAM_VERSION}.orig.tar.xz" \
+       "${SHIBBOLETH_SP_DEBIAN_SHA256}" "shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.debian.tar.xz" \
+     | sha256sum --check --strict \
+  && dpkg-source --extract "shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.dsc"
+
+COPY scripts/shibboleth-sp-3.5.2-memcache-get-retry.patch /tmp/
+WORKDIR /build/shibboleth-sp-${SHIBBOLETH_SP_UPSTREAM_VERSION}
+RUN patch --batch --forward --fuzz=0 -p1 < /tmp/shibboleth-sp-3.5.2-memcache-get-retry.patch \
+  && grep -Fq 'memcached_clone(nullptr, memc)' memcache-store/memcache-store.cpp \
+  && DEBFULLNAME="Rackspace Technology" DEBEMAIL="ODE@rackspace.com" \
+     dch --newversion "${SHIBBOLETH_SP_PACKAGE_VERSION}" --distribution unstable \
+         "Retry a memcache read once after a disconnected server." \
+  && dpkg-buildpackage --build=binary --no-sign -j"$(nproc)" \
+  && mkdir -p /packages \
+  && cp ../libshibsp12_*.deb \
+        ../libshibsp-plugins_*.deb \
+        ../shibboleth-sp-common_*.deb \
+        ../shibboleth-sp-utils_*.deb \
+        /packages/ \
+  && test "$(find /packages -maxdepth 1 -name '*.deb' | wc -l)" -eq 4
+
+FROM ${DEBIAN_IMAGE}
 ARG CACHEBUST=0
+ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack1
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="shibd"
+LABEL org.opencontainers.image.version="${SHIBBOLETH_SP_PACKAGE_VERSION}"
+LABEL org.opencontainers.image.shibboleth.patch="memcache-get-retry"
 
-# We want the newest shibboleth-sp point release available in Debian, which
-# often lands in sid before it reaches the current stable release. Debian sid
-# is layered as an additional apt source and apt pinning is scoped so that
-# ONLY the shibboleth-sp source package (and everything built from it) prefers
-# sid; everything else stays on the base image's suite because sid's catch-all
-# priority (100) is below the default (500). Any strict dependency that only
-# exists in sid is still reachable. If a newer point release later appears in
-# the base suite, apt will simply pick that one (same or higher version wins)
-# and the sid pin becomes a no-op. The sid sources/pin files are removed after
-# install so the resulting image ships a plain apt configuration.
+COPY --from=shibboleth_build /packages/ /tmp/shibboleth-packages/
 RUN export DEBIAN_FRONTEND=noninteractive \
-  && echo "deb http://deb.debian.org/debian sid main" \
-       > /etc/apt/sources.list.d/sid.list \
-  && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: src:shibboleth-sp\nPin: release a=unstable\nPin-Priority: 990\n' \
-       > /etc/apt/preferences.d/shibboleth-sp \
-  && apt-get update && apt-get upgrade -y \
-  && apt-get install --no-install-recommends -y shibboleth-sp-utils iproute2 \
-  && rm -f /etc/apt/sources.list.d/sid.list /etc/apt/preferences.d/shibboleth-sp \
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && apt-get clean -y \
-  && find / -name '*.pyc' -delete \
-  && find / -name '*.pyo' -delete \
-  && find / -name '__pycache__' -delete \
+  && echo "Build revision: ${CACHEBUST}" \
+  && apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             iproute2 \
+                                             /tmp/shibboleth-packages/*.deb \
+  && for package in shibboleth-sp-common libshibsp12 libshibsp-plugins shibboleth-sp-utils; do \
+       test "$(dpkg-query -W -f='${Version}' "${package}")" = "${SHIBBOLETH_SP_PACKAGE_VERSION}"; \
+     done \
+  && plugin="$(find /usr/lib -path '*/shibboleth/memcache-store.so' -print -quit)" \
+  && test -n "${plugin}" \
+  && test -f "${plugin}" \
+  && grep -aFq 'replacing client and retrying once' "${plugin}" \
+  && ldd "${plugin}" > /tmp/memcache-store.ldd \
+  && ! grep -q 'not found' /tmp/memcache-store.ldd \
+  && cat /tmp/memcache-store.ldd \
   && sed -i 's@fileName=.*@fileName=/dev/stdout@g' /etc/shibboleth/*.logger \
   && printf '\n========================================================================\n Installed Shibboleth SP packages\n========================================================================\n' \
   && dpkg-query -W -f '${Package} ${Version} (${Architecture})\n' \
        shibboleth-sp-common libshibsp12 libshibsp-plugins shibboleth-sp-utils \
   && printf '========================================================================\n' \
-  && shibd -v || true \
+  && shibd -v \
   && printf '========================================================================\n\n' \
-  && rm -rf /var/lib/apt/lists/*
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+            /tmp/memcache-store.ldd \
+            /tmp/shibboleth-packages
 
-# Set the user and group to match the original build
 USER 42424:42424
-
-# Set the entrypoint to the shibd command
 ENTRYPOINT ["/usr/sbin/shibd"]
