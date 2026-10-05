@@ -14,7 +14,7 @@ on:
     paths:
       - .github/workflows/container-build-shibd.yaml
       - ContainerFiles/shibd
-      - scripts/shibboleth-sp-3.5.2-memcache-get-retry.patch
+      - scripts/shibboleth-sp-3.5.2-memcache-connection-retry.patch
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
@@ -23,7 +23,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/shibd
   CATEGORY_NAME: shibd
-  SHIBD_PACKAGE_VERSION: 3.5.2+dfsg-1+genestack1
+  SHIBD_PACKAGE_VERSION: 3.5.2+dfsg-1+genestack2
 
 jobs:
   build-and-push-image:

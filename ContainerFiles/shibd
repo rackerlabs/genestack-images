@@ -5,7 +5,7 @@ ARG DEBIAN_IMAGE=debian:trixie-slim
 FROM ${DEBIAN_IMAGE} AS shibboleth_build
 ARG SHIBBOLETH_SP_UPSTREAM_VERSION=3.5.2+dfsg
 ARG SHIBBOLETH_SP_SOURCE_VERSION=3.5.2+dfsg-1
-ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack1
+ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack2
 ARG SHIBBOLETH_SP_DSC_SHA256=00e3b12e2da0e9240358c8e05c6f2d2ae7c413fd6175da5305ae4cc13f7d320a
 ARG SHIBBOLETH_SP_ORIG_SHA256=b945e9eb218d3679dbb390df1a2c16678e5679b269c728b7d08dc7b02487b03a
 ARG SHIBBOLETH_SP_DEBIAN_SHA256=8dce4a8d7fe513984dd7c82981a16885517313963f78b066d3b70df36e6114e2
@@ -52,13 +52,14 @@ RUN curl -fsSLO "https://deb.debian.org/debian/pool/main/s/shibboleth-sp/shibbol
      | sha256sum --check --strict \
   && dpkg-source --extract "shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.dsc"
 
-COPY scripts/shibboleth-sp-3.5.2-memcache-get-retry.patch /tmp/
+COPY scripts/shibboleth-sp-3.5.2-memcache-connection-retry.patch /tmp/
 WORKDIR /build/shibboleth-sp-${SHIBBOLETH_SP_UPSTREAM_VERSION}
-RUN patch --batch --forward --fuzz=0 -p1 < /tmp/shibboleth-sp-3.5.2-memcache-get-retry.patch \
-  && grep -Fq 'memcached_clone(nullptr, memc)' memcache-store/memcache-store.cpp \
+RUN patch --batch --forward --fuzz=0 -p1 < /tmp/shibboleth-sp-3.5.2-memcache-connection-retry.patch \
+  && grep -Fq 'retryDelays[] = { 100, 250, 500 }' memcache-store/memcache-store.cpp \
+  && test "$(grep -Fc 'replaceClient("' memcache-store/memcache-store.cpp)" -eq 5 \
   && DEBFULLNAME="Rackspace Technology" DEBEMAIL="ODE@rackspace.com" \
      dch --newversion "${SHIBBOLETH_SP_PACKAGE_VERSION}" --distribution unstable \
-         "Retry a memcache read once after a disconnected server." \
+         "Retry memcache operations after disconnected servers." \
   && dpkg-buildpackage --build=binary --no-sign -j"$(nproc)" \
   && mkdir -p /packages \
   && cp ../libshibsp12_*.deb \
@@ -70,12 +71,12 @@ RUN patch --batch --forward --fuzz=0 -p1 < /tmp/shibboleth-sp-3.5.2-memcache-get
 
 FROM ${DEBIAN_IMAGE}
 ARG CACHEBUST=0
-ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack1
+ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack2
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="shibd"
 LABEL org.opencontainers.image.version="${SHIBBOLETH_SP_PACKAGE_VERSION}"
-LABEL org.opencontainers.image.shibboleth.patch="memcache-get-retry"
+LABEL org.opencontainers.image.shibboleth.patch="memcache-connection-retry"
 
 COPY --from=shibboleth_build /packages/ /tmp/shibboleth-packages/
 RUN export DEBIAN_FRONTEND=noninteractive \
@@ -91,7 +92,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && plugin="$(find /usr/lib -path '*/shibboleth/memcache-store.so' -print -quit)" \
   && test -n "${plugin}" \
   && test -f "${plugin}" \
-  && grep -aFq 'replacing client and retrying once' "${plugin}" \
+  && grep -aFq 'connection failed, retry %u/%u in %u ms' "${plugin}" \
+  && grep -aFq 'recovered after %u retry attempt%s' "${plugin}" \
   && ldd "${plugin}" > /tmp/memcache-store.ldd \
   && ! grep -q 'not found' /tmp/memcache-store.ldd \
   && cat /tmp/memcache-store.ldd \
