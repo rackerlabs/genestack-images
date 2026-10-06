@@ -5,7 +5,8 @@
 ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
-ARG OS_VERSION=stable/2025.1
+# No default: the release is supplied by the build workflow.
+ARG OS_VERSION
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -20,6 +21,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              ssl-cert
 # package list pulled from here: https://opendev.org/openstack/heat/src/branch/master/requirements.txt
 RUN set -eux; \
+  if [ -z "${OS_VERSION}" ]; then \
+    echo "OS_VERSION build-arg is required and has no default." >&2; \
+    echo "Pass the release being built, e.g. --build-arg OS_VERSION=stable/2025.1" >&2; \
+    exit 1; \
+  fi; \
   case "${OS_VERSION}" in \
     stable/2025.1|2025.1|epoxy) OS_CONSTRAINTS=stable/2025.1 ;; \
     stable/2026.1|2026.1|gazpacho|gazapacho) OS_CONSTRAINTS=stable/2026.1 ;; \
@@ -97,6 +103,12 @@ RUN bash /opt/openstack-client-cve-patching.sh
 COPY scripts/blazar-client-host-unset-patch.sh /opt/
 RUN bash /opt/blazar-client-host-unset-patch.sh
 
+# Record the resolved client version so the workflow can tag with it.
+RUN /var/lib/openstack/bin/python -c \
+      "from importlib.metadata import version; print(version('python-openstackclient'))" \
+      > /var/lib/openstack/openstack-client-release \
+  && test -s /var/lib/openstack/openstack-client-release
+
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
@@ -105,7 +117,8 @@ RUN find / -name '*.pyc' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
 
 FROM python:3.12-slim-bookworm
-ARG OS_VERSION=stable/2025.1
+# No default: the release is supplied by the build workflow.
+ARG OS_VERSION
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="openstack-client"
@@ -113,6 +126,10 @@ LABEL org.opencontainers.image.description="OpenStack Client (openstack-client) 
 LABEL org.opencontainers.image.openstack.version="${OS_VERSION}"
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
 RUN export DEBIAN_FRONTEND=noninteractive \
+  && if [ -z "${OS_VERSION}" ]; then \
+       echo "OS_VERSION build-arg is required and has no default." >&2; \
+       exit 1; \
+     fi \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y curl \
                                                 iputils-ping \
@@ -126,6 +143,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /etc/genestack \
   && printf '%s\n' "${OS_VERSION}" > /etc/genestack/openstack-version \
+  && mv /var/lib/openstack/openstack-client-release /etc/genestack/openstack-client-release \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \

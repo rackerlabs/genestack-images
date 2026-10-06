@@ -100,6 +100,17 @@ jobs:
           build-args: |
             OS_VERSION=${{ matrix.openstack-version }}
             CACHEBUST=${{ github.sha }}
+      - name: Resolve the openstack-client release version from the built image
+        run: |
+          set -euo pipefail
+          OSC_VERSION="$(docker run --rm "${IMAGE_NAME}:local" \
+            cat /etc/genestack/openstack-client-release | tr -d '[:space:]')"
+          if [ -z "${OSC_VERSION}" ]; then
+            echo "::error::Unable to read the python-openstackclient version from the image." >&2
+            exit 1
+          fi
+          echo "OSC_VERSION=${OSC_VERSION}" >> "$GITHUB_ENV"
+          echo "Built ${{ matrix.openstack-version }} -> python-openstackclient ${OSC_VERSION}"
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -151,8 +162,13 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.OSC_VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.OSC_VERSION }}-${{ env.MY_DATE }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # The client version is only known after the build.
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.openstack.client.version=${{ env.OSC_VERSION }}
           build-args: |
             OS_VERSION=${{ matrix.openstack-version }}
             CACHEBUST=${{ github.sha }}
