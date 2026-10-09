@@ -66,7 +66,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Verify and extract shibboleth-sp version
         run: |
           PACKAGE_VERSION=$(docker run --rm --entrypoint dpkg-query \
@@ -134,4 +134,4 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHIBD_VERSION }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}

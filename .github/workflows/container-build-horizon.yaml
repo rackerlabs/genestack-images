@@ -107,7 +107,7 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Smoke test image
         # Runs as root to mirror the openstack-helm horizon container
         # (runAsUser: 0). Gates the publish step on schedule/dispatch runs.
@@ -194,5 +194,5 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
 

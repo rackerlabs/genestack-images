@@ -54,4 +54,7 @@ jobs:
         push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        build-args: EXPORTER_PORT=9100  # Default, overridden by env in deployment
+        # Default exporter port is overridden by the deployment environment.
+        build-args: |
+          EXPORTER_PORT=9100
+          CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
