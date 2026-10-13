@@ -1,64 +1,85 @@
 #!/usr/bin/env bash
 
-patch_magnum_nodegroups_v2_migration() {
-    local migration_file
-
-    migration_file="$(find /var/lib/openstack/lib/python*/site-packages/magnum/db/sqlalchemy/alembic/versions \
-        -name 'c04e925e65c2_nodegroups_v2.py' \
-        -print \
-        -quit)"
-
-    if [ -z "${migration_file}" ]; then
-        echo "Magnum nodegroups_v2 migration not found; skipping patch"
-        return 0
-    fi
-
-    /var/lib/openstack/bin/python - "${migration_file}" <<'PY'
+patch_magnum_mysql_charset_declarations() {
+    /var/lib/openstack/bin/python <<'PY'
 from pathlib import Path
-import sys
 
-path = Path(sys.argv[1])
-text = path.read_text()
+site_packages = next(Path("/var/lib/openstack/lib").glob("python*/site-packages"))
+magnum_root = site_packages / "magnum"
 
-if "_add_column_if_missing" in text:
-    print(f"{path}: nodegroups_v2 migration already patched")
-    raise SystemExit(0)
+replacements = {
+    "db/sqlalchemy/alembic/versions/2581ebaf0cb2_initial_migration.py": [
+        (
+            "        mysql_ENGINE='InnoDB',\n"
+            "        mysql_DEFAULT_CHARSET='UTF8'\n",
+            "        mysql_ENGINE='InnoDB'\n",
+        ),
+        (
+            "        mysql_ENGINE='InnoDB',\n"
+            "        mysql_DEFAULT_CHARSET='UTF8'\n"
+            "    )\n"
+            "    # end Alembic commands\n",
+            "        mysql_ENGINE='InnoDB'\n"
+            "    )\n"
+            "    # end Alembic commands\n",
+        ),
+    ],
+    "db/sqlalchemy/alembic/versions/421102d1f2d2_create_x509keypair_table.py": [
+        (
+            "        mysql_ENGINE='InnoDB',\n"
+            "        mysql_DEFAULT_CHARSET='UTF8'\n",
+            "        mysql_ENGINE='InnoDB'\n",
+        ),
+    ],
+    "db/sqlalchemy/alembic/versions/456126c6c9e9_create_baylock_table.py": [
+        (
+            "        mysql_ENGINE='InnoDB',\n"
+            "        mysql_DEFAULT_CHARSET='UTF8'\n",
+            "        mysql_ENGINE='InnoDB'\n",
+        ),
+    ],
+    "db/sqlalchemy/alembic/versions/ee92b41b8809_create_quotas_table.py": [
+        (
+            "        mysql_ENGINE='InnoDB',\n"
+            "        mysql_DEFAULT_CHARSET='UTF8'\n",
+            "        mysql_ENGINE='InnoDB'\n",
+        ),
+    ],
+    "db/sqlalchemy/models.py": [
+        (
+            "        return {'mysql_engine': CONF.database.mysql_engine,\n"
+            "                'mysql_charset': \"utf8\"}\n",
+            "        return {'mysql_engine': CONF.database.mysql_engine}\n",
+        ),
+    ],
+}
 
-old = """\
-def upgrade():
-    op.add_column('nodegroup', sa.Column('stack_id', String(255)))
-    op.add_column('nodegroup', sa.Column('status', String(20)))
-    op.add_column('nodegroup', sa.Column('status_reason', sa.Text()))
-    op.add_column('nodegroup', sa.Column('version', String(20)))
-"""
+patched = False
 
-new = """\
-def _has_column(table_name, column_name):
-    inspector = sa.inspect(op.get_bind())
-    return column_name in {column['name']
-                           for column in inspector.get_columns(table_name)}
+for relative_path, file_replacements in replacements.items():
+    path = magnum_root / relative_path
+    if not path.exists():
+        raise SystemExit(f"{path}: expected Magnum file not found")
 
+    text = path.read_text()
+    updated = text
 
-def _add_column_if_missing(table_name, column):
-    if not _has_column(table_name, column.name):
-        op.add_column(table_name, column)
+    for old, new in file_replacements:
+        updated = updated.replace(old, new)
 
+    if updated == text:
+        print(f"{path}: no charset declarations to patch")
+        continue
 
-def upgrade():
-    _add_column_if_missing('nodegroup', sa.Column('stack_id', String(255)))
-    _add_column_if_missing('nodegroup', sa.Column('status', String(20)))
-    _add_column_if_missing('nodegroup', sa.Column('status_reason', sa.Text()))
-    _add_column_if_missing('nodegroup', sa.Column('version', String(20)))
-"""
+    path.write_text(updated)
+    patched = True
+    print(f"{path}: removed MySQL charset declarations")
 
-if old not in text:
-    raise SystemExit(f"{path}: expected nodegroups_v2 migration block not found")
-
-path.write_text(text.replace(old, new, 1))
-print(f"{path}: patched nodegroups_v2 migration")
+if not patched:
+    print("Magnum MySQL charset declarations already patched")
 PY
 }
 
 if [ ${OS_VERSION:-master} = "stable/2025.1" ] || [ ${OS_VERSION:-master} = "stable/2026.1" ]; then
-    patch_magnum_nodegroups_v2_migration
+    patch_magnum_mysql_charset_declarations
 fi
