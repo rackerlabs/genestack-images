@@ -15,7 +15,10 @@ on:
       - .github/workflows/container-build-nova.yaml
       - ContainerFiles/nova
       - dist/novnc.tar.gz
+      - patches/nova/resize-local-disk-preflight-master.patch
+      - patches/nova/resize-local-disk-preflight-stable-2026.1.patch
       - scripts/nova-cve-patching.sh
+      - scripts/nova-resize-preflight-patch.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
