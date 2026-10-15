@@ -94,7 +94,7 @@
  from nova import notifications
  from nova.notifications.objects import aggregate as aggregate_notification
  from nova.notifications.objects import base as notification_base
-@@ -75,6 +77,87 @@
+@@ -75,6 +77,91 @@
  NON_INHERITABLE_IMAGE_NAMESPACES = frozenset([
      'os_glance',
  ])
@@ -109,7 +109,11 @@
 +
 +def supports_local_disk_slot_policy(compute_node):
 +    """Return whether a compute node uses libvirt disk slot allocation."""
-+    return compute_node.hypervisor_type in LOCAL_DISK_SLOT_HYPERVISORS
++    hypervisor_type = compute_node.hypervisor_type
++    return (
++        hypervisor_type is not None and
++        hypervisor_type.lower() in LOCAL_DISK_SLOT_HYPERVISORS
++    )
 +
 +
 +def _get_flavor_local_disk_layout(flavor):

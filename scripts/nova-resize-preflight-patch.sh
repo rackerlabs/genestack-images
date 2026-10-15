@@ -21,6 +21,8 @@ nova_root="$('/var/lib/openstack/bin/python' -c \
 if grep -q 'Unable to resize ephemeral disk down from' \
         "${nova_root}/nova/compute/api.py" && \
         grep -q 'def check_resize_local_disk_device_conflicts' \
+        "${nova_root}/nova/compute/utils.py" && \
+        grep -q 'hypervisor_type.lower() in LOCAL_DISK_SLOT_HYPERVISORS' \
         "${nova_root}/nova/compute/utils.py"; then
     echo "Nova resize API pre-flight checks are already present; skipping."
     exit 0
@@ -33,6 +35,8 @@ patch --batch --forward --fuzz=0 --directory="${nova_root}" --strip=1 \
 grep -q 'Unable to resize ephemeral disk down from' \
     "${nova_root}/nova/compute/api.py"
 grep -q 'def check_resize_local_disk_device_conflicts' \
+    "${nova_root}/nova/compute/utils.py"
+grep -q 'hypervisor_type.lower() in LOCAL_DISK_SLOT_HYPERVISORS' \
     "${nova_root}/nova/compute/utils.py"
 "/var/lib/openstack/bin/python" -m py_compile \
     "${nova_root}/nova/compute/api.py" \

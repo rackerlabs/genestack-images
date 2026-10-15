@@ -35,7 +35,8 @@ The pre-flight check returns HTTP 400 through Nova's existing
 `CannotResizeDisk` handling when:
 
 - a flavor would reduce the ephemeral disk size on the libvirt-family
-  hypervisors (`kvm`, `qemu`, or `parallels`); or
+  hypervisors (`kvm`, `qemu`, or `parallels`), accepting the uppercase
+  hypervisor types reported by libvirt-backed compute nodes; or
 - a newly required ephemeral or swap disk device slot conflicts with the
   device name of an attached Cinder volume.
 
