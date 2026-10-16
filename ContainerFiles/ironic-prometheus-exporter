@@ -38,8 +38,8 @@ RUN find / -name '*.pyc' -delete \
 
 FROM python:3.12-slim-bookworm
 
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="ironic-prometheus-exporter"
 LABEL org.opencontainers.image.description="Ironic Prometheus Exporter"
 

@@ -15,7 +15,7 @@ RUN find / -name '*.pyc' -delete \
     && find / -name '__pycache__' -delete
 
 FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
+LABEL maintainer="MBFS"
 LABEL org.opencontainers.image.name="blazar-reservation-splitter"
 LABEL org.opencontainers.image.description="Blazar Reservation Splitter for Ceilometer"
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack

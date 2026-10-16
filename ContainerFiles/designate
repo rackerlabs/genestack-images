@@ -50,8 +50,8 @@ RUN find / -name '*.pyc' -delete \
 
 
 FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="designate"
 LABEL org.opencontainers.image.description="OpenStack Service (designate) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack

@@ -56,8 +56,8 @@ RUN find / -name '*.pyc' -delete \
 
 
 FROM ghcr.io/rackerlabs/genestack-images/apache:latest
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="keystone"
 LABEL org.opencontainers.image.description="OpenStack Service (Keystone) built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack

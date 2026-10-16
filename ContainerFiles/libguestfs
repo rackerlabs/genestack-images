@@ -99,8 +99,8 @@ RUN make INSTALLDIRS=vendor REALLY_INSTALL=yes install
 
 
 FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="libguestfs"
 LABEL org.opencontainers.image.description="LibGuestFS built for the enterprise."
 RUN export DEBIAN_FRONTEND=noninteractive \

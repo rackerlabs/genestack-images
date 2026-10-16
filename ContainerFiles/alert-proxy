@@ -27,8 +27,8 @@ RUN find / -name '*.pyc' -delete \
   && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key
 
 FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="alert-proxy"
 LABEL org.opencontainers.image.description="Alert-Proxy built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack

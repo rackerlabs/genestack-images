@@ -70,8 +70,8 @@ RUN ninja -j $(nproc) rbd rados rbd_python3 rados_python3
 RUN ninja install
 
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:3.12-latest
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="ceph-libs"
 LABEL org.opencontainers.image.description="Ceph client libraries built for the enterprise."
 COPY --from=dependency_build /usr/local/lib /usr/local/lib

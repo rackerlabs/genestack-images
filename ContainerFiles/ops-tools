@@ -8,8 +8,8 @@ ARG GENESTACK_REF=main
 ARG TARGETARCH=amd64
 ARG CACHEBUST=0
 
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="ops-tools"
 LABEL org.opencontainers.image.description="Genestack operator diagnostics and remediation tools."
 LABEL org.opencontainers.image.title="ops-tools"

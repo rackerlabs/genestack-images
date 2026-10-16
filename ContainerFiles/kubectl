@@ -5,8 +5,8 @@ ARG KUBECTL_VERSION=v1.34.3
 ARG TARGETARCH=amd64
 ARG CACHEBUST=0
 
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="kubectl"
 
 # Run the CVE patching script

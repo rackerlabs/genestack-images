@@ -106,8 +106,8 @@ RUN find / -name '*.pyc' -delete \
 
 FROM python:3.12-slim-bookworm
 ARG OS_VERSION=stable/2025.1
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="openstack-client"
 LABEL org.opencontainers.image.description="OpenStack Client (openstack-client) built for the enterprise."
 LABEL org.opencontainers.image.openstack.version="${OS_VERSION}"

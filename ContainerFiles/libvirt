@@ -12,8 +12,8 @@ FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
 FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG_2}
 ARG CACHEBUST=0
 ARG OS_VERSION=stable/2025.1
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="libvirt"
 LABEL org.opencontainers.image.openstack.version="${OS_VERSION}"
 RUN set -eux; \

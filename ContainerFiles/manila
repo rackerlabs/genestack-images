@@ -120,8 +120,8 @@ FROM python:3.12.12-slim-trixie
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="manila"
 LABEL org.opencontainers.image.description="OpenStack Service (manila) built for the enterprise."
 

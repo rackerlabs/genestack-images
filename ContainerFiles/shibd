@@ -72,8 +72,8 @@ RUN patch --batch --forward --fuzz=0 -p1 < /tmp/shibboleth-sp-3.5.2-memcache-con
 FROM ${DEBIAN_IMAGE}
 ARG CACHEBUST=0
 ARG SHIBBOLETH_SP_PACKAGE_VERSION=3.5.2+dfsg-1+genestack2
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="shibd"
 LABEL org.opencontainers.image.version="${SHIBBOLETH_SP_PACKAGE_VERSION}"
 LABEL org.opencontainers.image.shibboleth.patch="memcache-connection-retry"

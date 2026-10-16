@@ -67,8 +67,8 @@ RUN find / -name '*.pyc' -delete \
 
 
 FROM ubuntu:noble
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="nova"
 LABEL org.opencontainers.image.description="OpenStack Service (nova) built for the enterprise."
 COPY --from=base /var/lib/openstack /var/lib/openstack

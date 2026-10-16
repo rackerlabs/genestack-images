@@ -20,8 +20,8 @@ RUN make build
 
 
 FROM debian:trixie-slim
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="kubernetes-entrypoint"
 LABEL org.opencontainers.image.description="kubernetes-entrypoint for the enterprise."
 COPY --from=dependency_build /opt/kubernetes-entrypoint/bin/kubernetes-entrypoint /usr/local/bin/kubernetes-entrypoint

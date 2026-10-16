@@ -5,8 +5,8 @@
 ARG VENV_TAG=3.12-latest
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
 ARG CACHEBUST=0
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="keystone"
 LABEL org.opencontainers.image.description="OpenStack Service (Keystone) built for the enterprise."
 ARG MOD_WSGI_VERSION=5.0.2
@@ -40,8 +40,8 @@ RUN find / -name '*.pyc' -delete \
 
 
 FROM python:3.12-slim-bookworm
-LABEL maintainer="Rackspace"
-LABEL vendor="Rackspace OpenStack Team"
+LABEL maintainer="MBFS"
+LABEL vendor="MBFS Platform Team"
 LABEL org.opencontainers.image.name="Apache2 with mod_wsgi ${MOD_WSGI_VERSION}"
 LABEL org.opencontainers.image.description="Apache2 built for the enterprise."
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
