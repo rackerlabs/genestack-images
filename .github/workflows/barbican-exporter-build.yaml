@@ -1,5 +1,5 @@
 ---
-name: Build and Push Barbican Exporter to GHCR
+name: Build and Push Barbican Exporter to Harbor
 
 on:
   push:
@@ -17,10 +17,11 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: self-hosted-gh-runner
+      labels: [self-hosted, Linux, X64]
     permissions:
       contents: read
-      packages: write
 
     steps:
     - name: Checkout code
@@ -29,18 +30,36 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Log in to GitHub Container Registry
+    - name: Check Harbor configuration
+      env:
+        HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
+        HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+      run: |
+        missing=""
+        [ -n "${{ vars.HARBOR_REGISTRY }}" ] || missing="${missing} vars.HARBOR_REGISTRY"
+        [ -n "${{ vars.HARBOR_PROJECT }}" ] || missing="${missing} vars.HARBOR_PROJECT"
+        if [ "${{ github.event_name }}" = "push" ]; then
+          [ -n "${HARBOR_USERNAME}" ] || missing="${missing} secrets.HARBOR_USERNAME"
+          [ -n "${HARBOR_PASSWORD}" ] || missing="${missing} secrets.HARBOR_PASSWORD"
+        fi
+        if [ -n "${missing}" ]; then
+          echo "::error::Missing Harbor configuration:${missing} - see .github/harbor-setup.md"
+          exit 1
+        fi
+
+    - name: Log in to Harbor
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: docker/login-action@v2
       with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        registry: ${{ vars.HARBOR_REGISTRY }}
+        username: ${{ secrets.HARBOR_USERNAME }}
+        password: ${{ secrets.HARBOR_PASSWORD }}
 
     - name: Extract metadata (tags, labels)
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ghcr.io/${{ github.repository }}/barbican-exporter
+        images: ${{ vars.HARBOR_REGISTRY }}/${{ vars.HARBOR_PROJECT }}/barbican-exporter
         tags: |
           type=ref,event=branch
           type=ref,event=pr

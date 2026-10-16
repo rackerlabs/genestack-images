@@ -5,7 +5,6 @@ permissions:
   actions: read
   contents: read
   id-token: write
-  packages: write
   pull-requests: write
   security-events: write
 
@@ -35,8 +34,8 @@ on:
         type: string
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/cinder
+  REGISTRY: ${{ vars.HARBOR_REGISTRY }}
+  IMAGE_NAME: ${{ vars.HARBOR_PROJECT }}/cinder
   project_version: ${{ github.event.inputs.project-version }}
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
@@ -46,7 +45,9 @@ env:
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: self-hosted-gh-runner
+      labels: [self-hosted, Linux, X64]
     outputs:
       openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
     steps:
@@ -63,7 +64,9 @@ jobs:
     strategy:
       matrix:
         openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints)}}
-    runs-on: ubuntu-latest
+    runs-on:
+      group: self-hosted-gh-runner
+      labels: [self-hosted, Linux, X64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,12 +84,29 @@ jobs:
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
-      - name: Log in to the Container registry
+      - name: Check Harbor configuration
+        env:
+          HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "${REGISTRY}" ] || missing="${missing} vars.HARBOR_REGISTRY"
+          [ -n "${{ vars.HARBOR_PROJECT }}" ] || missing="${missing} vars.HARBOR_PROJECT"
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            [ -n "${HARBOR_USERNAME}" ] || missing="${missing} secrets.HARBOR_USERNAME"
+            [ -n "${HARBOR_PASSWORD}" ] || missing="${missing} secrets.HARBOR_PASSWORD"
+          fi
+          if [ -n "${missing}" ]; then
+            echo "::error::Missing Harbor configuration:${missing} - see .github/harbor-setup.md"
+            exit 1
+          fi
+      - name: Log in to Harbor
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -102,7 +122,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.IMAGE_NAME }}:local
+            ${{ env.IMAGE_NAME }}:local-${{ github.run_id }}-${{ strategy.job-index }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
@@ -112,7 +132,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         with:
-          image-ref: '${{ env.IMAGE_NAME }}:local'
+          image-ref: '${{ env.IMAGE_NAME }}:local-${{ github.run_id }}-${{ strategy.job-index }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           ignore-unfixed: true
@@ -128,7 +148,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          image-ref: '${{ env.IMAGE_NAME }}:local'
+          image-ref: '${{ env.IMAGE_NAME }}:local-${{ github.run_id }}-${{ strategy.job-index }}'
           output: trivy.txt
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH,MEDIUM'
@@ -165,3 +185,6 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Remove local image
+        if: always()
+        run: docker image rm -f "${IMAGE_NAME}:local-${{ github.run_id }}-${{ strategy.job-index }}" || true
