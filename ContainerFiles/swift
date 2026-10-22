@@ -1,0 +1,80 @@
+# syntax = docker/dockerfile:1
+# This Dockerfile uses multi-stage build to customize DEV and PROD images:
+# https://docs.docker.com/develop/develop-images/multistage-build/
+#
+# A single Swift image is used for every role in the openstack-helm swift
+# chart (proxy, account, container, object, storage-init, ring-builder,
+# ring-copy). The chart selects the role via its start scripts.
+
+ARG VENV_TAG=3.12-latest
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
+ARG OS_VERSION=master
+ARG OS_CONSTRAINTS=master
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             bash \
+                                             build-essential \
+                                             curl \
+                                             gettext \
+                                             git \
+                                             libffi-dev \
+                                             liberasurecode-dev \
+                                             libssl-dev \
+                                             libsystemd-dev \
+                                             libxml2-dev \
+                                             libxslt1-dev \
+                                             pkg-config
+RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
+                                       git+https://opendev.org/openstack/swift.git@${OS_VERSION}#egg=swift \
+                                       ceilometermiddleware \
+                                       keystonemiddleware \
+                                       python-keystoneclient \
+                                       python-memcached \
+                                       python-swiftclient \
+                                       PyECLib \
+                                       python-openstackclient
+RUN find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && find / -name '*.whl' -delete
+
+FROM python:3.12-slim-bookworm
+LABEL maintainer="Rackspace"
+LABEL vendor="Rackspace OpenStack Team"
+LABEL org.opencontainers.image.name="swift"
+LABEL org.opencontainers.image.description="OpenStack Service (swift) built for the enterprise."
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             bash \
+                                             libxml2 \
+                                             libxslt1.1 \
+                                             liberasurecode1 \
+                                             procps \
+                                             rsync \
+                                             xfsprogs \
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && find / -name '*.pyc' -delete \
+  && find / -name '*.pyo' -delete \
+  && find / -name '__pycache__' -delete \
+  && groupadd --system --gid 42424 swift \
+  && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin --create-home --home /var/lib/swift swift \
+  && mkdir -p /var/lib/openstack/etc/swift /srv/node /var/cache/swift /var/run/swift /var/log/swift \
+  && ln -s /var/lib/openstack/etc/swift /etc/swift \
+  && chown swift:swift -h /etc/swift \
+  && chown -R swift:swift /var/lib/openstack/etc/swift /srv/node /var/cache/swift /var/run/swift /var/log/swift
+# Set the environment variables for the swift venv
+ENV PATH="/var/lib/openstack/bin:$PATH"
+# Set the working directory
+WORKDIR /var/lib/openstack
+# Set the user and group to match the original build. The openstack-helm
+# swift chart runs storage, ring and init containers as root through its
+# pod security context, which overrides this default.
+USER 42424:42424
+# Set the entrypoint to the swift-init command
+ENTRYPOINT ["/var/lib/openstack/bin/swift-init"]

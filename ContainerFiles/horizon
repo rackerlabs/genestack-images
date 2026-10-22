@@ -7,6 +7,7 @@ FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependenc
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+ARG BARBICAN_UI_REF=refs/changes/30/1006630/7
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -57,11 +58,20 @@ RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/up
                                        git+https://opendev.org/openstack/neutron-vpnaas-dashboard@${OS_VERSION}#egg=neutron_vpnaas_dashboard \
                                        git+https://opendev.org/openstack/neutron-fwaas-dashboard@${OS_VERSION}#egg=neutron_fwaas_dashboard \
                                        git+https://opendev.org/openstack/octavia-dashboard@${OS_VERSION}#egg=octavia_dashboard \
+                                       git+https://opendev.org/openstack/freezer-web-ui@${OS_VERSION}#egg=freezer-web-ui \
+                                       git+https://opendev.org/openstack/trove-dashboard@${OS_VERSION}#egg=trove_dashboard \
+                                       git+https://opendev.org/openstack/blazar-dashboard@${OS_VERSION}#egg=blazar_dashboard \
+                                       git+https://opendev.org/openstack/barbican-ui@${BARBICAN_UI_REF}#egg=barbican-ui \
                                        PyMySQL \
                                        pymemcache \
                                        python-memcached
 COPY scripts/horizon-cve-patching.sh /opt/
 RUN bash /opt/horizon-cve-patching.sh
+RUN for pkg in /var/lib/openstack/lib/python*/site-packages/*/; do \
+      if [ -d "${pkg}enabled" ] || [ -d "${pkg}local/enabled" ]; then \
+        [ -d "${pkg}locale" ] || mkdir -p "${pkg}locale"; \
+      fi; \
+    done
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
@@ -89,7 +99,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && mkdir -p /var/lib/openstack/etc/horizon \
   && ln -s /var/lib/openstack/etc/horizon /etc/horizon \
   && chown horizon:horizon -h /etc/horizon \
-  && chown -R horizon:horizon /var/lib/openstack/etc/horizon
+  && chown -R horizon:horizon /var/lib/openstack/etc/horizon \
+  && mkdir -p /etc/apache2/sites-enabled \
+  && ln -sf ../sites-available/000-default.conf /etc/apache2/sites-enabled/000-default.conf
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 USER 42424:42424

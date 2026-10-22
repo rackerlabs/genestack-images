@@ -97,7 +97,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             OVS_VERSION=${{ matrix.ovs-version }}
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
@@ -153,4 +153,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             OVS_VERSION=${{ matrix.ovs-version }}
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
