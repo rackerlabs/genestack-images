@@ -7,6 +7,7 @@ FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependenc
 ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+ARG BARBICAN_UI_REF=refs/changes/30/1006630/7
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -36,25 +37,41 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN curl -so /tmp/upper-constraints.txt https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt
 RUN sed -i '/^horizon.*/d' /tmp/upper-constraints.txt
 RUN sed -i '/^pyScss.*/d' /tmp/upper-constraints.txt
-RUN /var/lib/openstack/bin/pip install --constraint /tmp/upper-constraints.txt \
+# NOTE: Several legacy XStatic sdists (e.g. XStatic-Angular-Schema-Form) call
+# pkg_resources.declare_namespace() in setup.py at build time. setuptools>=81
+# no longer vendors pkg_resources, so the isolated PEP 517 build env fails with
+# "ModuleNotFoundError: No module named 'pkg_resources'". Pre-install a
+# setuptools that still ships pkg_resources and disable build isolation so these
+# legacy packages can build against it.
+RUN /var/lib/openstack/bin/pip install "setuptools<81" wheel pbr
+RUN /var/lib/openstack/bin/pip install --no-build-isolation --constraint /tmp/upper-constraints.txt \
                                        git+https://opendev.org/openstack/horizon.git@${OS_VERSION}#egg=horizon \
-                                       git+https://opendev.org/openstack/adjutant-ui@${OS_CONSTRAINTS}#egg=adjutant-ui \
-                                       git+https://opendev.org/openstack/designate-dashboard@${OS_CONSTRAINTS}#egg=designate_dashboard \
+                                       git+https://opendev.org/openstack/adjutant-ui@${OS_VERSION}#egg=adjutant-ui \
+                                       git+https://opendev.org/openstack/designate-dashboard@${OS_VERSION}#egg=designate_dashboard \
                                        git+https://opendev.org/openstack/cloudkitty-dashboard.git@${OS_VERSION}#egg=cloudkitty_dashboard \
-                                       git+https://opendev.org/openstack/heat-dashboard@${OS_CONSTRAINTS}#egg=heat_dashboard \
-                                       git+https://opendev.org/openstack/ironic-ui@${OS_CONSTRAINTS}#egg=ironic-ui \
-                                       git+https://opendev.org/openstack/magnum-ui@${OS_CONSTRAINTS}#egg=magnum-ui \
-                                       git+https://opendev.org/openstack/manila-ui.git@${OS_CONSTRAINTS}#egg=manila-ui \
-                                       git+https://opendev.org/openstack/masakari-dashboard@${OS_CONSTRAINTS}#egg=masakari_dashboard \
-                                       git+https://opendev.org/openstack/mistral-dashboard.git@${OS_CONSTRAINTS}#egg=mistral-dashboard \
-                                       git+https://opendev.org/openstack/neutron-vpnaas-dashboard@${OS_CONSTRAINTS}#egg=neutron_vpnaas_dashboard \
-                                       git+https://opendev.org/openstack/neutron-fwaas-dashboard@${OS_CONSTRAINTS}#egg=neutron_fwaas_dashboard \
-                                       git+https://opendev.org/openstack/octavia-dashboard@${OS_CONSTRAINTS}#egg=octavia_dashboard \
+                                       git+https://opendev.org/openstack/heat-dashboard@${OS_VERSION}#egg=heat_dashboard \
+                                       git+https://opendev.org/openstack/ironic-ui@${OS_VERSION}#egg=ironic-ui \
+                                       git+https://opendev.org/openstack/magnum-ui@${OS_VERSION}#egg=magnum-ui \
+                                       git+https://opendev.org/openstack/manila-ui.git@${OS_VERSION}#egg=manila-ui \
+                                       git+https://opendev.org/openstack/masakari-dashboard@${OS_VERSION}#egg=masakari_dashboard \
+                                       git+https://opendev.org/openstack/mistral-dashboard.git@${OS_VERSION}#egg=mistral-dashboard \
+                                       git+https://opendev.org/openstack/neutron-vpnaas-dashboard@${OS_VERSION}#egg=neutron_vpnaas_dashboard \
+                                       git+https://opendev.org/openstack/neutron-fwaas-dashboard@${OS_VERSION}#egg=neutron_fwaas_dashboard \
+                                       git+https://opendev.org/openstack/octavia-dashboard@${OS_VERSION}#egg=octavia_dashboard \
+                                       git+https://opendev.org/openstack/freezer-web-ui@${OS_VERSION}#egg=freezer-web-ui \
+                                       git+https://opendev.org/openstack/trove-dashboard@${OS_VERSION}#egg=trove_dashboard \
+                                       git+https://opendev.org/openstack/blazar-dashboard@${OS_VERSION}#egg=blazar_dashboard \
+                                       git+https://opendev.org/openstack/barbican-ui@${BARBICAN_UI_REF}#egg=barbican-ui \
                                        PyMySQL \
                                        pymemcache \
                                        python-memcached
 COPY scripts/horizon-cve-patching.sh /opt/
 RUN bash /opt/horizon-cve-patching.sh
+RUN for pkg in /var/lib/openstack/lib/python*/site-packages/*/; do \
+      if [ -d "${pkg}enabled" ] || [ -d "${pkg}local/enabled" ]; then \
+        [ -d "${pkg}locale" ] || mkdir -p "${pkg}locale"; \
+      fi; \
+    done
 RUN find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
   && find / -name '__pycache__' -delete \
@@ -82,7 +99,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && mkdir -p /var/lib/openstack/etc/horizon \
   && ln -s /var/lib/openstack/etc/horizon /etc/horizon \
   && chown horizon:horizon -h /etc/horizon \
-  && chown -R horizon:horizon /var/lib/openstack/etc/horizon
+  && chown -R horizon:horizon /var/lib/openstack/etc/horizon \
+  && mkdir -p /etc/apache2/sites-enabled \
+  && ln -sf ../sites-available/000-default.conf /etc/apache2/sites-enabled/000-default.conf
 ENV PATH="/var/lib/openstack/bin:$PATH"
 WORKDIR /var/lib/openstack
 USER 42424:42424

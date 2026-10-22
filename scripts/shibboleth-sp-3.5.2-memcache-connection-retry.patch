@@ -1,0 +1,221 @@
+Description: Retry memcache operations after a disconnected server
+ libmemcached closes the failed socket when an operation returns a connection
+ failure, but Shibboleth immediately propagates the error. Clone the client to
+ discard connection and DNS state, then retry up to three times with short,
+ deterministic backoff.
+Author: Rackspace Technology
+Forwarded: no
+Last-Update: 2026-10-05
+Comment: libmemcached 1.1.4 can leak a partial clone if its internal allocation fails.
+---
+diff --git a/memcache-store/memcache-store.cpp b/memcache-store/memcache-store.cpp
+index 201a39a9..f7f64cf7 100644
+--- a/memcache-store/memcache-store.cpp
++++ b/memcache-store/memcache-store.cpp
+@@ -72,6 +72,8 @@ namespace {
+     static const XMLCh failLimit[] = UNICODE_LITERAL_9(f,a,i,l,L,i,m,i,t);
+     static const XMLCh retryTimeout[] = UNICODE_LITERAL_12(r,e,t,r,y,T,i,m,e,o,u,t);
+     static const XMLCh nonBlocking[] = UNICODE_LITERAL_11(n,o,n,B,l,o,c,k,i,n,g);
++    static const unsigned int retryDelays[] = { 100, 250, 500 };
++    static const unsigned int retryCount = sizeof(retryDelays) / sizeof(retryDelays[0]);
+   
+     class mc_record {
+     public:
+@@ -108,6 +110,8 @@ namespace {
+ 
+     private:
+         bool handleError(const char*, memcached_return) const;
++        bool replaceClient(const char*, unsigned int);
++        void logRecovery(const char*, unsigned int) const;
+     };
+   
+     class MemcacheStorageService : public StorageService, public MemcacheBase {
+@@ -237,6 +241,47 @@ bool MemcacheBase::handleError(const char* fn, memcached_return rv) const
+     throw IOException(error);
+ }
+ 
++bool MemcacheBase::replaceClient(const char* operation, unsigned int retry)
++{
++    const unsigned int delay = retryDelays[retry];
++    const string error(memcached_last_error_message(memc));
++
++    m_log.warn(
++        "Memcache::%s connection failed, retry %u/%u in %u ms: %s",
++        operation, retry + 1, retryCount, delay, error.c_str()
++        );
++
++#ifdef WIN32
++    Sleep(delay);
++#else
++    struct timeval tv = { 0, delay * 1000 };
++    select(0, 0, 0, 0, &tv);
++#endif
++
++    memcached_st* replacement = memcached_clone(nullptr, memc);
++    if (!replacement) {
++        m_log.error(
++            "Memcache::%s unable to replace client for retry %u/%u",
++            operation, retry + 1, retryCount
++            );
++        return false;
++    }
++
++    memcached_free(memc);
++    memc = replacement;
++    return true;
++}
++
++void MemcacheBase::logRecovery(const char* operation, unsigned int retries) const
++{
++    if (retries) {
++        m_log.info(
++            "Memcache::%s recovered after %u retry attempt%s",
++            operation, retries, retries == 1 ? "" : "s"
++            );
++    }
++}
++
+ bool MemcacheBase::addLock(string what, bool use_prefix)
+ {
+     string lock_name = what + ":LOCK";
+@@ -316,12 +361,23 @@ bool MemcacheBase::deleteMemcache(const char* key, time_t timeout, bool use_pref
+         final_key = key;
+ 
+     Lock lock(m_lock);
+-    memcached_return rv = memcached_delete(memc, const_cast<char*>(final_key.c_str()), final_key.length(), timeout);
++    unsigned int retries = 0;
++    memcached_return rv;
++    while (true) {
++        rv = memcached_delete(memc, const_cast<char*>(final_key.c_str()), final_key.length(), timeout);
++        if (rv != MEMCACHED_CONNECTION_FAILURE || retries >= retryCount)
++            break;
++        if (!replaceClient("deleteMemcache", retries))
++            break;
++        ++retries;
++    }
+ 
+     switch (rv) {
+         case MEMCACHED_SUCCESS:
++            logRecovery("deleteMemcache", retries);
+             return true;
+         case MEMCACHED_NOTFOUND:
++            logRecovery("deleteMemcache", retries);
+             // Key wasn't there... No biggie.
+             return false;
+         default:
+@@ -338,16 +394,27 @@ bool MemcacheBase::getMemcache(const char* key, string& dest, uint32_t* flags, b
+         final_key = key;
+ 
+     Lock lock(m_lock);
+-    size_t len;
++    unsigned int retries = 0;
++    size_t len = 0;
+     memcached_return rv;
+-    char* result = memcached_get(memc, const_cast<char*>(final_key.c_str()), final_key.length(), &len, flags, &rv);
++    char* result = nullptr;
++    while (true) {
++        result = memcached_get(memc, const_cast<char*>(final_key.c_str()), final_key.length(), &len, flags, &rv);
++        if (rv != MEMCACHED_CONNECTION_FAILURE || retries >= retryCount)
++            break;
++        if (!replaceClient("getMemcache", retries))
++            break;
++        ++retries;
++    }
+ 
+     switch (rv) {
+         case MEMCACHED_SUCCESS:
++            logRecovery("getMemcache", retries);
+             dest = result;
+             free(result);
+             return true;
+         case MEMCACHED_NOTFOUND:
++            logRecovery("getMemcache", retries);
+             m_log.debug("Key %s not found in memcache...", key);
+             return false;
+         default:
+@@ -364,14 +431,25 @@ bool MemcacheBase::addMemcache(const char* key, string& value, time_t timeout, u
+         final_key = key;
+ 
+     Lock lock(m_lock);
+-    memcached_return rv = memcached_add(
+-        memc, const_cast<char*>(final_key.c_str()), final_key.length(), const_cast<char*>(value.c_str()), value.length(), timeout, flags
+-        );
++    unsigned int retries = 0;
++    memcached_return rv;
++    while (true) {
++        rv = memcached_add(
++            memc, const_cast<char*>(final_key.c_str()), final_key.length(), const_cast<char*>(value.c_str()), value.length(), timeout, flags
++            );
++        if (rv != MEMCACHED_CONNECTION_FAILURE || retries >= retryCount)
++            break;
++        if (!replaceClient("addMemcache", retries))
++            break;
++        ++retries;
++    }
+ 
+     switch (rv) {
+         case MEMCACHED_SUCCESS:
++            logRecovery("addMemcache", retries);
+             return true;
+         case MEMCACHED_NOTSTORED:
++            logRecovery("addMemcache", retries);
+             return false;
+         default:
+             return handleError("addMemcache", rv);
+@@ -387,12 +465,23 @@ bool MemcacheBase::setMemcache(const char* key, string& value, time_t timeout, u
+         final_key = key;
+ 
+     Lock lock(m_lock);
+-    memcached_return rv = memcached_set(
+-        memc, const_cast<char*>(final_key.c_str()), final_key.length(), const_cast<char*>(value.c_str()), value.length(), timeout, flags
+-        );
++    unsigned int retries = 0;
++    memcached_return rv;
++    while (true) {
++        rv = memcached_set(
++            memc, const_cast<char*>(final_key.c_str()), final_key.length(), const_cast<char*>(value.c_str()), value.length(), timeout, flags
++            );
++        if (rv != MEMCACHED_CONNECTION_FAILURE || retries >= retryCount)
++            break;
++        if (!replaceClient("setMemcache", retries))
++            break;
++        ++retries;
++    }
+ 
+-    if (rv == MEMCACHED_SUCCESS)
++    if (rv == MEMCACHED_SUCCESS) {
++        logRecovery("setMemcache", retries);
+         return true;
++    }
+     return handleError("setMemcache", rv);
+ }
+ 
+@@ -406,14 +495,25 @@ bool MemcacheBase::replaceMemcache(const char* key, string& value, time_t timeou
+         final_key = key;
+ 
+     Lock lock(m_lock);
+-    memcached_return rv = memcached_replace(
+-        memc, const_cast<char*>(final_key.c_str()), final_key.length(), const_cast<char*>(value.c_str()), value.length(), timeout, flags
+-        );
++    unsigned int retries = 0;
++    memcached_return rv;
++    while (true) {
++        rv = memcached_replace(
++            memc, const_cast<char*>(final_key.c_str()), final_key.length(), const_cast<char*>(value.c_str()), value.length(), timeout, flags
++            );
++        if (rv != MEMCACHED_CONNECTION_FAILURE || retries >= retryCount)
++            break;
++        if (!replaceClient("replaceMemcache", retries))
++            break;
++        ++retries;
++    }
+ 
+     switch (rv) {
+         case MEMCACHED_SUCCESS:
++            logRecovery("replaceMemcache", retries);
+             return true;
+         case MEMCACHED_NOTSTORED:
++            logRecovery("replaceMemcache", retries);
+             // not there
+             return false;
+         default:

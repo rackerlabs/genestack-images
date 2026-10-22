@@ -1,0 +1,188 @@
+--- a/nova/compute/api.py
++++ b/nova/compute/api.py
+@@ -4263,6 +4263,41 @@
+                     "other TPM secret security modes is not supported.")
+             raise exception.OperationNotSupportedForVTPM(msg)
+ 
++    @staticmethod
++    def _check_resize_local_disk_device_conflicts(
++            context, instance, current_flavor, new_flavor):
++        """Reject an unsupported local disk resize.
++
++        This compatibility check is specific to the libvirt hypervisor types
++        which use Nova's disk slot allocator. Other virt drivers have their
++        own guest device naming contracts.
++        """
++        ephemeral_down = (
++            new_flavor.ephemeral_gb < current_flavor.ephemeral_gb)
++        new_local_disk_slots = compute_utils.get_new_local_disk_slots(
++            current_flavor, new_flavor)
++        if not ephemeral_down and not new_local_disk_slots:
++            return
++
++        compute_node = objects.ComputeNode.get_by_host_and_nodename(
++            context, instance.host, instance.node)
++        if not compute_utils.supports_local_disk_slot_policy(compute_node):
++            return
++
++        if ephemeral_down:
++            reason = _(
++                "Unable to resize ephemeral disk down from "
++                "%(current)s GB to %(new)s GB.") % {
++                    'current': current_flavor.ephemeral_gb,
++                    'new': new_flavor.ephemeral_gb,
++                }
++            raise exception.CannotResizeDisk(reason=reason)
++
++        bdms = objects.BlockDeviceMappingList.get_by_instance_uuid(
++            context, instance.uuid)
++        compute_utils.check_resize_local_disk_device_conflicts(
++            instance, current_flavor, new_flavor, bdms)
++
+     @block_shares_not_supported()
+     # TODO(stephenfin): This logic would be so much easier to grok if we
+     # finally split resize and cold migration into separate code paths
+@@ -4299,14 +4334,6 @@
+ 
+         current_flavor = instance.get_flavor()
+ 
+-        # NOTE(aarents): Ensure image_base_image_ref is present as it will be
+-        # needed during finish_resize/cross_cell_resize. Instances upgraded
+-        # from an older nova release may not have this property because of
+-        # a rebuild bug Bug/1893618.
+-        instance.system_metadata.update(
+-            {'image_base_image_ref': instance.image_ref}
+-        )
+-
+         # If flavor_id is not provided, only migrate the instance.
+         volume_backed = None
+         if not flavor_id:
+@@ -4349,6 +4376,18 @@
+ 
+         if same_flavor and flavor_id:
+             raise exception.CannotResizeToSameFlavor()
++
++        if flavor_id:
++            self._check_resize_local_disk_device_conflicts(
++                context, instance, current_flavor, new_flavor)
++
++        # NOTE(aarents): Ensure image_base_image_ref is present as it will be
++        # needed during finish_resize/cross_cell_resize. Instances upgraded
++        # from an older nova release may not have this property because of
++        # a rebuild bug Bug/1893618.
++        instance.system_metadata.update(
++            {'image_base_image_ref': instance.image_ref}
++        )
+ 
+         # ensure there is sufficient headroom for upsizes
+         if flavor_id:
+--- a/nova/compute/utils.py
++++ b/nova/compute/utils.py
+@@ -19,6 +19,7 @@
+ import inspect
+ import itertools
+ import math
++import re
+ import socket
+ import traceback
+ 
+@@ -34,6 +35,7 @@
+ from nova.compute import vm_states
+ import nova.conf
+ from nova import exception
++from nova.i18n import _
+ from nova import notifications
+ from nova.notifications.objects import aggregate as aggregate_notification
+ from nova.notifications.objects import base as notification_base
+@@ -75,6 +77,91 @@
+ NON_INHERITABLE_IMAGE_NAMESPACES = frozenset([
+     'os_glance',
+ ])
++
++
++LOCAL_DISK_SLOT_HYPERVISORS = frozenset({
++    fields.HVType.KVM,
++    fields.HVType.PARALLELS,
++    fields.HVType.QEMU,
++})
++
++
++def supports_local_disk_slot_policy(compute_node):
++    """Return whether a compute node uses libvirt disk slot allocation."""
++    hypervisor_type = compute_node.hypervisor_type
++    return (
++        hypervisor_type is not None and
++        hypervisor_type.lower() in LOCAL_DISK_SLOT_HYPERVISORS
++    )
++
++
++def _get_flavor_local_disk_layout(flavor):
++    has_ephemeral = flavor.get('ephemeral_gb', 0) > 0
++    has_swap = flavor.get('swap', 0) > 0
++    layout = {}
++    if has_ephemeral:
++        layout['b'] = 'ephemeral'
++    if has_swap:
++        layout['c' if has_ephemeral else 'b'] = 'swap'
++    return layout
++
++
++def get_new_local_disk_slots(current_flavor, new_flavor):
++    """Return local disk slots introduced by a flavor transition."""
++    return (
++        set(_get_flavor_local_disk_layout(new_flavor)) -
++        set(_get_flavor_local_disk_layout(current_flavor))
++    )
++
++
++def check_resize_local_disk_device_conflicts(
++        instance, current_flavor, new_flavor, bdms):
++    """Reject a resize which adds a local disk over a Cinder device.
++
++    Device prefixes vary with the libvirt disk bus and ``disk_prefix``
++    configuration, so compare the complete disk suffix instead of enumerating
++    prefixes. Partition names are deliberately ignored.
++    """
++    new_slots = get_new_local_disk_slots(current_flavor, new_flavor)
++    if not new_slots:
++        return
++
++    root_bdm = bdms.root_bdm()
++    root_device_name = block_device.strip_dev(
++        instance.get('root_device_name'))
++    conflicts = []
++    conflict_slots = set()
++    for bdm in bdms:
++        device_name = block_device.strip_dev(bdm.get('device_name'))
++        match = re.fullmatch(r'[a-z]+d([a-z]+)', device_name or '')
++        if (
++            bdm is not root_bdm and
++            device_name != root_device_name and
++            bdm.is_volume and
++            bdm.get('volume_id') and
++            not bdm.get('no_device') and
++            (bdm.get('device_type') or 'disk') == 'disk' and
++            match and
++            match.group(1) in new_slots
++        ):
++            conflicts.append(block_device.prepend_dev(device_name))
++            conflict_slots.add(match.group(1))
++
++    if conflicts:
++        new_layout = _get_flavor_local_disk_layout(new_flavor)
++        roles = ', '.join(
++            '%s (%s)' % (new_layout[slot], slot)
++            for slot in sorted(conflict_slots)
++        )
++        reason = _(
++            "the destination flavor requires new local disk role(s) "
++            "%(roles)s in device slot(s) already used by attached Cinder "
++            "volume(s): %(devices)s"
++        ) % {
++            'devices': ', '.join(sorted(conflicts)),
++            'roles': roles,
++        }
++        raise exception.CannotResizeDisk(reason=reason)
+ 
+ 
+ def exception_to_dict(fault, message=None):

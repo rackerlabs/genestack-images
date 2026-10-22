@@ -70,6 +70,24 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && ln -s /var/lib/openstack/etc/designate /etc/designate \
   && chown designate:designate -h /etc/designate \
   && chown -R designate:designate /var/lib/openstack/etc/designate
+# The bind9 backend runs rndc through designate-rootwrap, which needs sudo and a
+# rootwrap config. The chart mounts an emptyDir over /etc/designate, so the
+# config and filters installed there by pip are not visible at runtime; keep
+# copies outside that path. /usr/share/designate/rootwrap is already in the
+# default filters_path, so only root_helper has to point at the conf copy:
+#   root_helper = sudo designate-rootwrap /etc/designate-rootwrap.conf
+RUN set -eux; \
+  install -d -m 0755 /usr/share/designate/rootwrap; \
+  install -m 0644 /var/lib/openstack/etc/designate/rootwrap.d/bind9.filters \
+                  /usr/share/designate/rootwrap/bind9.filters; \
+  install -m 0644 /var/lib/openstack/etc/designate/rootwrap.conf \
+                  /etc/designate-rootwrap.conf; \
+  ln -sf /var/lib/openstack/bin/designate-rootwrap /usr/local/bin/designate-rootwrap; \
+  printf '%s\n' 'designate ALL=(root) NOPASSWD: /usr/local/bin/designate-rootwrap' \
+    > /etc/sudoers.d/designate-rootwrap; \
+  chmod 0440 /etc/sudoers.d/designate-rootwrap; \
+  visudo -c -f /etc/sudoers.d/designate-rootwrap; \
+  test -x /usr/sbin/rndc
 # Set the environment variables for the designate venv
 ENV PATH="/var/lib/openstack/bin:$PATH"
 # Set the working directory

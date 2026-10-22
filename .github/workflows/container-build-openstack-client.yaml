@@ -171,4 +171,4 @@ jobs:
             org.opencontainers.image.openstack.client.version=${{ env.OSC_VERSION }}
           build-args: |
             OS_VERSION=${{ matrix.openstack-version }}
-            CACHEBUST=${{ github.sha }}
+            CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
