@@ -169,6 +169,7 @@ nav:
       - Placement: containers/placement.md
       - Shibd: containers/shibd.md
       - Skyline: containers/skyline.md
+      - Swift: containers/swift.md
       - Trove: containers/trove.md
   - Blog: https://blog.rackspacecloud.com/blog
   - Docs: https://docs.rackspacecloud.com
