@@ -8,6 +8,7 @@ ARG CACHEBUST=0
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG OS_CAPI_PLUGIN_VERSION=master
+ARG OS_CAPI_PLUGIN_REPO=https://opendev.org/openstack/magnum-capi-helm
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
@@ -34,7 +35,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              xmlsec1
 RUN /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        git+https://opendev.org/openstack/magnum.git@${OS_VERSION}#egg=magnum \
-                                       git+https://opendev.org/openstack/magnum-capi-helm@${OS_CAPI_PLUGIN_VERSION}#egg=magnum_capi_helm \
+                                       git+${OS_CAPI_PLUGIN_REPO}@${OS_CAPI_PLUGIN_VERSION}#egg=magnum_capi_helm \
                                        PyMySQL \
                                        python-memcached \
                                        uwsgi

@@ -35,19 +35,26 @@ on:
         required: false
         type: string
       osCapiPluginVersion:
-        description: 'Version of OpenStack Magnum CAPI Plugin to use'
+        description: 'Version of OpenStack Magnum CAPI Plugin to use (tag, branch or commit)'
         required: false
         default: '1.4.0'
-        type: choice
-        options:
-          - master
-          - "1.4.0"
-          - "1.2.1"
+        type: string
+      osCapiPluginRepo:
+        description: 'Git repository of the Magnum CAPI Plugin, e.g. a fork carrying unreleased changes'
+        required: false
+        default: 'https://opendev.org/openstack/magnum-capi-helm'
+        type: string
+      image-tag-suffix:
+        description: 'Tag suffix used instead of "latest", e.g. a short name for a custom plugin build'
+        required: false
+        type: string
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/magnum
   project_version: ${{ github.event.inputs.project-version }}
+  capi_plugin_repo: ${{ github.event.inputs.osCapiPluginRepo || 'https://opendev.org/openstack/magnum-capi-helm' }}
+  tag_suffix: ${{ github.event.inputs.image-tag-suffix }}
   # NOTE(cloudnull): This is used to parse the workflow_dispatch inputs, sadly the inputs are not available in the
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
@@ -124,6 +131,7 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             OS_CAPI_PLUGIN_VERSION=${{ matrix.osCapiPluginTag }}
+            OS_CAPI_PLUGIN_REPO=${{ env.capi_plugin_repo }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
@@ -175,11 +183,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.tag_suffix || 'latest' }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.tag_suffix && format('{0}-', env.tag_suffix) || '' }}${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             OS_CAPI_PLUGIN_VERSION=${{ matrix.osCapiPluginTag }}
+            OS_CAPI_PLUGIN_REPO=${{ env.capi_plugin_repo }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
