@@ -4,12 +4,16 @@
 
 ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
+ARG NOVA_REPOSITORY=https://opendev.org/openstack/nova.git
+ARG NOVA_FLAVOR_QOS_REPOSITORY=https://github.com/rackerlabs/rxt-nova-flavor-qos.git
 
 FROM ubuntu:noble AS base
 
 ARG CACHEBUST=0
 ARG OS_VERSION
 ARG OS_CONSTRAINTS
+ARG NOVA_REPOSITORY
+ARG NOVA_FLAVOR_QOS_REPOSITORY
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -40,7 +44,8 @@ RUN apt-get update \
 RUN python3 -m venv --system-site-packages /var/lib/openstack \
   && /var/lib/openstack/bin/pip install --upgrade pip \
   && /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
-                                               git+https://opendev.org/openstack/nova.git@${OS_VERSION}#egg=nova \
+                                               git+${NOVA_REPOSITORY}@${OS_VERSION}#egg=nova \
+                                               git+${NOVA_FLAVOR_QOS_REPOSITORY}@${OS_VERSION}#egg=rxt-nova-flavor-qos \
                                                git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
                                                PyMySQL \
                                                libvirt-python \
@@ -48,6 +53,13 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
                                                python-memcached \
                                                websockify \
                                                uwsgi
+
+RUN test -x /var/lib/openstack/bin/nova-compute \
+  && test -x /var/lib/openstack/bin/nova-flavor-qos-compute \
+  && /var/lib/openstack/bin/python -c "from rxt_nova_flavor_qos.compute import FlavorQosComputeManager" \
+  && mv /var/lib/openstack/bin/nova-compute /var/lib/openstack/bin/nova-compute.stock \
+  && ln -s nova-flavor-qos-compute /var/lib/openstack/bin/nova-compute \
+  && test "$(readlink /var/lib/openstack/bin/nova-compute)" = "nova-flavor-qos-compute"
 
 COPY dist/novnc.tar.gz /tmp/novnc.tar.gz
 RUN mkdir -p /usr/share/novnc \
