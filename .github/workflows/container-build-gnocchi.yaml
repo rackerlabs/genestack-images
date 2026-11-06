@@ -28,7 +28,7 @@ on:
           - master
           - stable/4.6
           - stable/4.7
-          - stable/4.8
+          - stable/4.7.1
       project-version:
         description: 'Version of Gnocchi to build, defaults to gnocchi-version if unspecified'
         required: false
@@ -47,7 +47,7 @@ env:
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       gnocchi-versions: ${{ steps.generate-matrix.outputs.gnocchi_versions }}
     steps:
@@ -64,7 +64,7 @@ jobs:
     strategy:
       matrix:
         gnocchi-version: ${{ fromJSON(needs.init.outputs.gnocchi-versions)}}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -92,9 +92,9 @@ jobs:
               echo "OS_CONSTRAINTS_REF=unmaintained/2024.1" >> $GITHUB_ENV
               ;;
             stable/4.7)
-              echo "OS_CONSTRAINTS_REF=stable/2025.1" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=unmaintained/2025.1" >> $GITHUB_ENV
               ;;
-            stable/4.8)
+            stable/4.7.1)
               echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV
               ;;
             *)

@@ -37,7 +37,7 @@ env:
     ["5.0.2"]
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       apache-mod-wsgi-version: ${{ steps.generate-matrix.outputs.mod_wsgi }}
     steps:
@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         apache-mod-wsgi-version: ${{ fromJSON(needs.init.outputs.apache-mod-wsgi-version) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
