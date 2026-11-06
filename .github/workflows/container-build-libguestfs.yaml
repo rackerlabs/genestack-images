@@ -47,7 +47,7 @@ env:
     ["v1.3.24"]
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       libguestfs-version: ${{ steps.generate-matrix.outputs.libguestfs_release }}
       libguestfs_hivex_release: ${{ steps.generate-matrix.outputs.libguestfs_hivex_release }}
@@ -68,7 +68,7 @@ jobs:
       matrix:
         libguestfs-version: ${{ fromJSON(needs.init.outputs.libguestfs-version) }}
         libguestfs-hivex-version: ${{ fromJSON(needs.init.outputs.libguestfs_hivex_release) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4

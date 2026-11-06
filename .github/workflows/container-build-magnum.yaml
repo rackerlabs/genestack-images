@@ -28,7 +28,7 @@ on:
         options:
           - master
           - unmaintained/2024.1
-          - stable/2025.1
+          - unmaintained/2025.1
           - stable/2026.1
       project-version:
         description: 'Version of OpenStack Magnum to build, defaults to openstack-constraints if unspecified'
@@ -52,13 +52,13 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2025.1", "stable/2026.1"]
+    ["unmaintained/2025.1", "stable/2026.1"]
   osCapiPluginTag: >
     ["1.4.0", "1.2.1", "master"]
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       openstack-constraints: ${{ steps.generate-matrix.outputs.openstack_constraints }}
       osCapiPluginTag: ${{ steps.generate-matrix.outputs.osCapiPluginTag }}
@@ -79,7 +79,7 @@ jobs:
       matrix:
         openstack-constraints: ${{ fromJSON(needs.init.outputs.openstack-constraints) }}
         osCapiPluginTag: ${{ fromJSON(needs.init.outputs.osCapiPluginTag) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
