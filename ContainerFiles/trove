@@ -43,6 +43,11 @@ RUN /var/lib/openstack/bin/python -m pip install --upgrade --force-reinstall pip
 COPY scripts/trove-cve-patching.sh /opt/
 RUN bash /opt/trove-cve-patching.sh
 
+COPY patches/trove/backup-with-trust-token-master.patch /opt/
+COPY patches/trove/backup-with-trust-token-stable-2026.1.patch /opt/
+COPY scripts/trove-backup-with-trust-token-patch.sh /opt/
+RUN bash /opt/trove-backup-with-trust-token-patch.sh
+
 RUN echo "dependency container *********************"
 RUN /usr/local/bin/python -m pip --version && /usr/local/bin/python -m pip freeze
 RUN /var/lib/openstack/bin/pip --version && /var/lib/openstack/bin/pip freeze

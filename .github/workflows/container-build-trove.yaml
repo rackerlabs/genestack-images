@@ -15,6 +15,9 @@ on:
       - .github/workflows/container-build-trove.yaml
       - ContainerFiles/trove
       - scripts/trove-cve-patching.sh
+      - patches/trove/backup-with-trust-token-master.patch
+      - patches/trove/backup-with-trust-token-stable-2026.1.patch
+      - scripts/trove-backup-with-trust-token-patch.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
@@ -26,8 +29,7 @@ on:
         type: choice
         options:
           - master
-          - unmaintained/2024.1
-          - stable/2025.1
+          - unmaintained/2025.1
           - stable/2026.1
       project-version:
         description: 'Version of OpenStack Trove to build, defaults to openstack-constraints if unspecified'
@@ -42,7 +44,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2025.1", "stable/2026.1"]
+    ["unmaintained/2025.1", "stable/2026.1"]
 
 jobs:
   init:
