@@ -37,7 +37,7 @@ env:
     ["branch-3.5"]
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       ovs-version: ${{ steps.generate-matrix.outputs.ovs_release }}
     steps:
@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         ovs-version: ${{ fromJSON(needs.init.outputs.ovs-version) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
