@@ -85,10 +85,19 @@ jobs:
         run: |
           if [ "${{ env.OS_VERSION_PARSE }}" = "2024.1" ]; then
             echo "RXT_VERSION=rxt-2024.1" >> $GITHUB_ENV
+            echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/neutron.git" >> $GITHUB_ENV
           elif [ "${{ env.OS_VERSION_PARSE }}" = "2025.1" ]; then
             echo "RXT_VERSION=rxt-2025.1" >> $GITHUB_ENV
+            echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/neutron.git" >> $GITHUB_ENV
+          elif [ "${{ env.OS_VERSION_PARSE }}" = "2026.1" ]; then
+            # Temporary fork carrying the binding:vif_type=virtual patch for the
+            # 2026.1 upgrade hop. Uses the upstream stable/2026.1 branch name so
+            # pbr/upper-constraints resolve correctly. Retire at 2026.2.
+            echo "RXT_VERSION=stable/2026.1" >> $GITHUB_ENV
+            echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/rxt-neutron.git" >> $GITHUB_ENV
           else
             echo "RXT_VERSION=rxt" >> $GITHUB_ENV
+            echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/neutron.git" >> $GITHUB_ENV
           fi
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -117,6 +126,7 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             RXT_VERSION=${{ env.RXT_VERSION }}
+            RXT_NEUTRON_REPO=${{ env.RXT_NEUTRON_REPO }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
@@ -175,4 +185,5 @@ jobs:
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             RXT_VERSION=${{ env.RXT_VERSION }}
+            RXT_NEUTRON_REPO=${{ env.RXT_NEUTRON_REPO }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
