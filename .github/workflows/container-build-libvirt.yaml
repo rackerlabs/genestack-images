@@ -22,22 +22,22 @@ on:
       openstack-version:
         description: 'Version of OpenStack to build against'
         required: true
-        default: "stable/2025.1"
+        default: "unmaintained/2025.1"
         type: choice
         options:
-          - stable/2025.1
-          - stable/2026.1
+          - "unmaintained/2025.1"
+          - "stable/2026.1"
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/libvirt
   CATEGORY_NAME: libvirt
   openstack_versions: >
-    ["stable/2025.1", "stable/2026.1"]
+    ["unmaintained/2025.1", "stable/2026.1"]
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       openstack-version: ${{ steps.generate-matrix.outputs.openstack_version }}
     steps:
@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         openstack-version: ${{ fromJSON(needs.init.outputs.openstack-version) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

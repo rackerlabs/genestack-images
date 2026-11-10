@@ -56,7 +56,7 @@ jobs:
     strategy:
       matrix:
         kube-ovn-version: ${{ fromJSON(needs.init.outputs.kube-ovn-version) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4

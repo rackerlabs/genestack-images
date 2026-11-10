@@ -26,9 +26,9 @@ on:
         type: choice
         options:
           - master
-          - stable/4.6
-          - stable/4.7
-          - stable/4.8
+          - "stable/4.7"
+          - "stable/4.7-2025.1"
+          - "stable/4.7-2026.1"
       project-version:
         description: 'Version of Gnocchi to build, defaults to gnocchi-version if unspecified'
         required: false
@@ -43,11 +43,11 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   gnocchi_versions: >
-    ["stable/4.6", "stable/4.7", "stable/4.8"]
+    ["stable/4.7", "stable/4.7-2025.1", "stable/4.7-2026.1"]
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       gnocchi-versions: ${{ steps.generate-matrix.outputs.gnocchi_versions }}
     steps:
@@ -64,7 +64,7 @@ jobs:
     strategy:
       matrix:
         gnocchi-version: ${{ fromJSON(needs.init.outputs.gnocchi-versions)}}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
         run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
       - name: Dynamically set OS_VERSION_PARSE environment variable
         run: |
-          VERSION=$(echo -n "${{ env.project_version != '' && env.project_version || matrix.gnocchi-version }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
+          VERSION=$(echo -n "${{ env.project_version != '' && env.project_version || matrix.gnocchi-version%%-* }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
@@ -88,13 +88,13 @@ jobs:
             master)
               echo "OS_CONSTRAINTS_REF=master" >> $GITHUB_ENV
               ;;
-            stable/4.6)
-              echo "OS_CONSTRAINTS_REF=unmaintained/2024.1" >> $GITHUB_ENV
-              ;;
             stable/4.7)
-              echo "OS_CONSTRAINTS_REF=stable/2025.1" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV
               ;;
-            stable/4.8)
+            stable/4.7-2025.1)
+              echo "OS_CONSTRAINTS_REF=unmaintained/2025.1" >> $GITHUB_ENV
+              ;;
+            stable/4.7-2026.1)
               echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV
               ;;
             *)
