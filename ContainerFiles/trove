@@ -27,6 +27,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                              libsystemd-dev \
                                              libxml2-dev \
                                              libxslt1-dev \
+                                             patch \
                                              pkg-config \
                                              ssl-cert \
                                              xmlsec1
@@ -42,6 +43,15 @@ RUN /var/lib/openstack/bin/python -m pip install --upgrade --force-reinstall pip
 
 COPY scripts/trove-cve-patching.sh /opt/
 RUN bash /opt/trove-cve-patching.sh
+
+# Apply the branch-specific Percona controller operations patch into the venv
+# that the runtime stage copies from (/var/lib/openstack). This runs in the
+# dependency_build stage, so the patched source is baked into the venv before
+# the runtime stage performs `COPY --from=dependency_build /var/lib/openstack`.
+# The script is a no-op for every branch other than stable/2026.1.
+COPY patches/trove/percona-controller-database-user-operations-stable-2026.1.patch /opt/
+COPY scripts/trove-percona-controller-patch.sh /opt/
+RUN bash /opt/trove-percona-controller-patch.sh
 
 RUN echo "dependency container *********************"
 RUN /usr/local/bin/python -m pip --version && /usr/local/bin/python -m pip freeze

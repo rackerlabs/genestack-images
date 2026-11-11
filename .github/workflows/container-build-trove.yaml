@@ -14,7 +14,9 @@ on:
     paths:
       - .github/workflows/container-build-trove.yaml
       - ContainerFiles/trove
+      - patches/trove/**
       - scripts/trove-cve-patching.sh
+      - scripts/trove-percona-controller-patch.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
@@ -42,7 +44,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2025.1", "stable/2026.1"]
+    ["stable/2026.1"]
 
 jobs:
   init:
