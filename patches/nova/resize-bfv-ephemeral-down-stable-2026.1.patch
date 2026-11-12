@@ -1,0 +1,42 @@
+--- a/nova/compute/api.py
++++ b/nova/compute/api.py
+@@ -4284,19 +4284,32 @@
+         if not compute_utils.supports_local_disk_slot_policy(compute_node):
+             return
+ 
+         if ephemeral_down:
+-            reason = _(
+-                "Unable to resize ephemeral disk down from "
+-                "%(current)s GB to %(new)s GB.") % {
+-                    'current': current_flavor.ephemeral_gb,
+-                    'new': new_flavor.ephemeral_gb,
+-                }
+-            raise exception.CannotResizeDisk(reason=reason)
++            # The ephemeral-down rule protects local (file-backed) disks.
++            # A volume-backed instance has no local file-backed ephemeral
++            # disk to shrink: its flavor ephemeral/swap values are only
++            # metadata unless the guest actually owns blank local BDMs,
++            # so the metadata-only rejection is a false positive for BFV
++            # instances. The new-slot Cinder device conflict check below
++            # still applies to volume-backed instances.
++            if compute_utils.is_volume_backed_instance(context, instance):
++                ephemeral_down = False
++            else:
++                reason = _(
++                    "Unable to resize ephemeral disk down from "
++                    "%(current)s GB to %(new)s GB.") % {
++                        'current': current_flavor.ephemeral_gb,
++                        'new': new_flavor.ephemeral_gb,
++                    }
++                raise exception.CannotResizeDisk(reason=reason)
++
++        if not new_local_disk_slots:
++            return
+ 
+         bdms = objects.BlockDeviceMappingList.get_by_instance_uuid(
+             context, instance.uuid)
+         compute_utils.check_resize_local_disk_device_conflicts(
+             instance, current_flavor, new_flavor, bdms)
+ 
+     @block_shares_not_supported()
+     # TODO(stephenfin): This logic would be so much easier to grok if we

@@ -72,6 +72,8 @@ RUN bash /opt/nova-cve-patching.sh
 
 COPY patches/nova/resize-local-disk-preflight-master.patch /opt/
 COPY patches/nova/resize-local-disk-preflight-stable-2026.1.patch /opt/
+COPY patches/nova/resize-bfv-ephemeral-down-master.patch /opt/
+COPY patches/nova/resize-bfv-ephemeral-down-stable-2026.1.patch /opt/
 COPY scripts/nova-resize-preflight-patch.sh /opt/
 RUN bash /opt/nova-resize-preflight-patch.sh
 

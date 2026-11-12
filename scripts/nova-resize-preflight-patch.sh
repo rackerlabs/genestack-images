@@ -5,9 +5,11 @@ set -euo pipefail
 case "${OS_VERSION:-master}" in
     master)
         patch_file=/opt/resize-local-disk-preflight-master.patch
+        bfv_patch_file=/opt/resize-bfv-ephemeral-down-master.patch
         ;;
     stable/2026.1)
         patch_file=/opt/resize-local-disk-preflight-stable-2026.1.patch
+        bfv_patch_file=/opt/resize-bfv-ephemeral-down-stable-2026.1.patch
         ;;
     *)
         echo "No Nova resize pre-flight patch for ${OS_VERSION:-master}; skipping."
@@ -20,6 +22,8 @@ nova_root="$('/var/lib/openstack/bin/python' -c \
 
 if grep -q 'Unable to resize ephemeral disk down from' \
         "${nova_root}/nova/compute/api.py" && \
+        grep -q 'if compute_utils.is_volume_backed_instance(context, instance):' \
+        "${nova_root}/nova/compute/api.py" && \
         grep -q 'def check_resize_local_disk_device_conflicts' \
         "${nova_root}/nova/compute/utils.py" && \
         grep -q 'hypervisor_type.lower() in LOCAL_DISK_SLOT_HYPERVISORS' \
@@ -31,6 +35,10 @@ fi
 echo "Applying Nova resize API pre-flight patch for ${OS_VERSION:-master}."
 patch --batch --forward --fuzz=0 --directory="${nova_root}" --strip=1 \
     < "${patch_file}"
+
+echo "Applying Nova resize boot-from-volume ephemeral-down patch."
+patch --batch --forward --fuzz=0 --directory="${nova_root}" --strip=1 \
+    < "${bfv_patch_file}"
 
 grep -q 'Unable to resize ephemeral disk down from' \
     "${nova_root}/nova/compute/api.py"
