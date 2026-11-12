@@ -1,6 +1,6 @@
 --- a/nova/compute/api.py
 +++ b/nova/compute/api.py
-@@ -4284,6 +4284,41 @@
+@@ -4284,6 +4284,52 @@
                      "other TPM secret security modes is not supported.")
              raise exception.OperationNotSupportedForVTPM(msg)
  
@@ -14,7 +14,8 @@
 +        own guest device naming contracts.
 +        """
 +        ephemeral_down = (
-+            new_flavor.ephemeral_gb < current_flavor.ephemeral_gb)
++            new_flavor.get('ephemeral_gb', 0) <
++            current_flavor.get('ephemeral_gb', 0))
 +        new_local_disk_slots = compute_utils.get_new_local_disk_slots(
 +            current_flavor, new_flavor)
 +        if not ephemeral_down and not new_local_disk_slots:
@@ -26,13 +27,23 @@
 +            return
 +
 +        if ephemeral_down:
-+            reason = _(
-+                "Unable to resize ephemeral disk down from "
-+                "%(current)s GB to %(new)s GB.") % {
-+                    'current': current_flavor.ephemeral_gb,
-+                    'new': new_flavor.ephemeral_gb,
-+                }
-+            raise exception.CannotResizeDisk(reason=reason)
++            # BFV instances can have flavor-defined ephemeral and swap BDMs.
++            # Do not reject their resize solely because the destination
++            # flavor has less ephemeral capacity. The new-slot Cinder device
++            # conflict check below must still run for BFV instances.
++            if compute_utils.is_volume_backed_instance(context, instance):
++                ephemeral_down = False
++            else:
++                reason = _(
++                    "Unable to resize ephemeral disk down from "
++                    "%(current)s GB to %(new)s GB.") % {
++                        'current': current_flavor.get('ephemeral_gb', 0),
++                        'new': new_flavor.get('ephemeral_gb', 0),
++                    }
++                raise exception.CannotResizeDisk(reason=reason)
++
++        if not new_local_disk_slots:
++            return
 +
 +        bdms = objects.BlockDeviceMappingList.get_by_instance_uuid(
 +            context, instance.uuid)
@@ -42,7 +53,7 @@
      # TODO(stephenfin): This logic would be so much easier to grok if we
      # finally split resize and cold migration into separate code paths
      @block_extended_resource_request
-@@ -4327,14 +4362,6 @@
+@@ -4327,14 +4373,6 @@
  
          current_flavor = instance.get_flavor()
  
@@ -57,7 +68,7 @@
          # If flavor_id is not provided, only migrate the instance.
          volume_backed = None
          if not flavor_id:
-@@ -4377,6 +4404,18 @@
+@@ -4377,6 +4415,18 @@
  
          if same_flavor and flavor_id:
              raise exception.CannotResizeToSameFlavor()

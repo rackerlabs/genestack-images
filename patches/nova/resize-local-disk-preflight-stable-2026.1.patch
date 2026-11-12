@@ -1,6 +1,6 @@
 --- a/nova/compute/api.py
 +++ b/nova/compute/api.py
-@@ -4263,6 +4263,41 @@
+@@ -4263,6 +4263,51 @@
                      "other TPM secret security modes is not supported.")
              raise exception.OperationNotSupportedForVTPM(msg)
  
@@ -26,13 +26,23 @@
 +            return
 +
 +        if ephemeral_down:
-+            reason = _(
-+                "Unable to resize ephemeral disk down from "
-+                "%(current)s GB to %(new)s GB.") % {
-+                    'current': current_flavor.ephemeral_gb,
-+                    'new': new_flavor.ephemeral_gb,
-+                }
-+            raise exception.CannotResizeDisk(reason=reason)
++            # BFV instances can have flavor-defined ephemeral and swap BDMs.
++            # Do not reject their resize solely because the destination
++            # flavor has less ephemeral capacity. The new-slot Cinder device
++            # conflict check below must still run for BFV instances.
++            if compute_utils.is_volume_backed_instance(context, instance):
++                ephemeral_down = False
++            else:
++                reason = _(
++                    "Unable to resize ephemeral disk down from "
++                    "%(current)s GB to %(new)s GB.") % {
++                        'current': current_flavor.ephemeral_gb,
++                        'new': new_flavor.ephemeral_gb,
++                    }
++                raise exception.CannotResizeDisk(reason=reason)
++
++        if not new_local_disk_slots:
++            return
 +
 +        bdms = objects.BlockDeviceMappingList.get_by_instance_uuid(
 +            context, instance.uuid)
@@ -42,7 +52,7 @@
      @block_shares_not_supported()
      # TODO(stephenfin): This logic would be so much easier to grok if we
      # finally split resize and cold migration into separate code paths
-@@ -4299,14 +4334,6 @@
+@@ -4299,14 +4344,6 @@
  
          current_flavor = instance.get_flavor()
  
@@ -57,7 +67,7 @@
          # If flavor_id is not provided, only migrate the instance.
          volume_backed = None
          if not flavor_id:
-@@ -4349,6 +4376,18 @@
+@@ -4349,6 +4386,18 @@
  
          if same_flavor and flavor_id:
              raise exception.CannotResizeToSameFlavor()
