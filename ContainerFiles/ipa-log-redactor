@@ -1,0 +1,68 @@
+# syntax=docker/dockerfile:1
+
+ARG VENV_TAG=3.12-latest
+
+FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+ARG CACHEBUST=0
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get upgrade -y \
+  && apt-get install --no-install-recommends -y \
+                                             ssl-cert
+
+COPY scripts/ironic-cve-patching.sh /opt/
+RUN bash /opt/ironic-cve-patching.sh
+
+RUN find / -name '*.pyc' -delete \
+    && find / -name '*.pyo' -delete \
+    && find / -name '__pycache__' -delete \
+    && find / -name '*.whl' -delete \
+    && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/client.key \
+    && rm -f /var/lib/openstack/lib/python*/site-packages/slapdtest/certs/server.key \
+    && sed -i '/^Usage/,/^Documentation\n^-.*$/d' /var/lib/openstack/lib/python*/site-packages/PyJWT-*.dist-info/METADATA || true
+
+FROM python:3.12-slim-bookworm
+
+LABEL org.opencontainers.image.title="Ironic Python Agent Log Redactor" \
+      org.opencontainers.image.name="ipa-log-redactor" \
+      org.opencontainers.image.description="Streams redacted Ironic Python Agent logs from diagnostic tar bundles" \
+      org.opencontainers.image.authors="Rackspace"
+
+COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update && apt-get upgrade -y \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && find / -name '*.pyc' -delete \
+    && find / -name '*.pyo' -delete \
+    && find / -name '__pycache__' -delete \
+    && groupadd --system --gid 42424 ironic \
+    && useradd --system --gid 42424 --uid 42424 --shell /sbin/nologin \
+               --create-home --home-dir /var/lib/ironic ironic
+
+
+# Set the environment variables for the ipa-log-redactor
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    STABILITY_SECONDS=60 \
+    MAX_ARCHIVE_BYTES=33554432 \
+    MAX_TOTAL_ARCHIVE_BYTES=536870912 \
+    MAX_MEMBER_BYTES=67108864 \
+    MAX_LINE_BYTES=1048576 \
+    MAX_TOTAL_OUTPUT_BYTES=268435456 \
+    MAX_OUTPUT_LINES=100000 \
+    MAX_FORWARDED_BYTES=268435456 \
+    STATUS_INTERVAL_SECONDS=300 \
+    RETENTION_DRY_RUN=false \
+    PATH="/var/lib/openstack/bin:$PATH"
+
+COPY scripts/ipa-log-redactor/ipa-log-redactor.py /app/
+
+WORKDIR /app
+
+# LOGS_DIR must be supplied at runtime, or pass --logs-dir as a container argument.
+# The mounted directory must be writable so bundles can be marked by outcome.
+USER 42424:42424
+
+ENTRYPOINT ["python", "/app/ipa-log-redactor.py"]
