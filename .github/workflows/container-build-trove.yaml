@@ -29,7 +29,7 @@ on:
         options:
           - master
           - unmaintained/2024.1
-          - stable/2025.1
+          - unmaintained/2025.1
           - stable/2026.1
       project-version:
         description: 'Version of OpenStack Trove to build, defaults to openstack-constraints if unspecified'

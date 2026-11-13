@@ -6,7 +6,7 @@ This container packages the Libvirt service for use in the stack. The build inst
 
 The build accepts an OpenStack release selector so the image can be tagged and
 audited against the stack release it is intended to serve. Supported values are
-`stable/2025.1` for Epoxy and `stable/2026.1` for Gazpacho.
+`unmaintained/2025.1` for Epoxy and `stable/2026.1` for Gazpacho.
 Epoxy uses the standard Debian Bookworm virtualization packages. Gazpacho uses
 Bookworm backports and verifies that libvirt is at least 10.0.0 and QEMU is at
 least 8.2.2 during the build.
@@ -30,7 +30,7 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| OS_VERSION | stable/2025.1 |
+| OS_VERSION | unmaintained/2025.1 |
 | BUILT_TAG | v3.5.1-latest |
 | BUILT_TAG_2 | v1.56.1-latest |
 | CACHEBUST | 0 |

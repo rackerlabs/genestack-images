@@ -31,7 +31,7 @@ on:
         options:
           - master
           - unmaintained/2024.1
-          - stable/2025.1
+          - unmaintained/2025.1
           - stable/2026.1
       project-version:
         description: 'Version of OpenStack nova to build, defaults to openstack-constraints if unspecified'
@@ -46,7 +46,7 @@ env:
   #                   workflow_dispatch event, so they're being stored in the environment variables. This is a
   #                   workaround until there's a better way to handle this.
   openstack_constraints: >
-    ["stable/2025.1", "stable/2026.1"]
+    ["unmaintained/2025.1", "stable/2026.1"]
 
 jobs:
   init:
@@ -85,6 +85,13 @@ jobs:
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
+      - name: Select the flavor-qos plugin branch
+        run: |
+          if [ "${{ env.OS_VERSION_PARSE }}" = "2026.1" ]; then
+            echo "NOVA_FLAVOR_QOS_VERSION=stable/2026.1" >> $GITHUB_ENV
+          else
+            echo "NOVA_FLAVOR_QOS_VERSION=main" >> $GITHUB_ENV
+          fi
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -111,6 +118,7 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            NOVA_FLAVOR_QOS_VERSION=${{ env.NOVA_FLAVOR_QOS_VERSION }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
@@ -168,4 +176,5 @@ jobs:
           build-args: |
             OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
+            NOVA_FLAVOR_QOS_VERSION=${{ env.NOVA_FLAVOR_QOS_VERSION }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}

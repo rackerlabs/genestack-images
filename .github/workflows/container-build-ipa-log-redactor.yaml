@@ -21,6 +21,10 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/ipa-log-redactor
   CATEGORY_NAME: ipa-log-redactor
+  # ironic-cve-patching.sh pins CVE-affected deps per OpenStack release. IPA is
+  # built from Epoxy (2025.1), matching the ironic images; without this the
+  # script defaults to OS_VERSION=master and applies no pins. Override to retarget.
+  os_version: "unmaintained/2025.1"
 
 jobs:
   build-and-push-image:
@@ -64,6 +68,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            OS_VERSION=${{ env.os_version }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0  # using latest trivy scanner
@@ -117,4 +122,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            OS_VERSION=${{ env.os_version }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}

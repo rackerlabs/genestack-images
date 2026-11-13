@@ -10,7 +10,7 @@
 # enabled_datastore allow-list in trove/extensions/common/models.py.
 #
 # The patch is branch-specific. It is only applied for OS_VERSION
-# stable/2026.1; every other branch (including stable/2025.1 and master) is
+# stable/2026.1; every other branch (including unmaintained/2025.1 and master) is
 # skipped explicitly so the behavior is never silently carried forward.
 set -euo pipefail
 
