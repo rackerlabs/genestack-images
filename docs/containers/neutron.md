@@ -23,23 +23,30 @@ graph LR
 
 | Argument | Default |
 | --- | --- |
-| BUILT_TAG | v3.5.1-latest |
+| BUILT_TAG | branch-3.5-latest |
 | OS_VERSION | master |
 | OS_CONSTRAINTS | master |
 | RXT_VERSION | master |
+| FLAVOR_QOS_VERSION | main |
 
 ??? example "Build Command"
 
     ``` bash
     docker build \
-    --build-arg BUILT_TAG=v3.5.1-latest \
-    --build-arg OS_VERSION=master \
-    --build-arg OS_CONSTRAINTS=master \
-    --build-arg RXT_VERSION=master \
+    --build-arg BUILT_TAG=branch-3.5-latest \
+    --build-arg OS_VERSION=stable/2026.1 \
+    --build-arg OS_CONSTRAINTS=stable/2026.1 \
+    --build-arg RXT_VERSION=rxt \
+    --build-arg FLAVOR_QOS_VERSION=stable/2026.1 \
     -f ContainerFiles/neutron \
-    -t neutron:local \
+    -t neutron:2026.1-flavor-qos \
     .
     ```
+
+The `neutron-flavor-qos` package is installed from
+[`rackerlabs/rxt-neutron-flavor-qos`](https://github.com/rackerlabs/rxt-neutron-flavor-qos).
+For OpenStack 2026.1 builds, the image workflow selects the `stable/2026.1`
+plugin branch automatically.
 
 ## Dependencies
 
