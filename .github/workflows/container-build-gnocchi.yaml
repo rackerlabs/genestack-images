@@ -84,6 +84,13 @@ jobs:
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
       - name: Map Gnocchi branch to OpenStack constraints
         run: |
+          # Default the source branch to the matrix leg (or the manual
+          # project-version override); stable/4.8 overrides to master below.
+          if [ -n "${{ env.project_version }}" ]; then
+            echo "GNOCCHI_SOURCE_REF=${{ env.project_version }}" >> $GITHUB_ENV
+          else
+            echo "GNOCCHI_SOURCE_REF=${{ matrix.gnocchi-version }}" >> $GITHUB_ENV
+          fi
           case "${{ matrix.gnocchi-version }}" in
             master)
               echo "OS_CONSTRAINTS_REF=master" >> $GITHUB_ENV
@@ -95,6 +102,11 @@ jobs:
               echo "OS_CONSTRAINTS_REF=unmaintained/2025.1" >> $GITHUB_ENV
               ;;
             stable/4.8)
+              # gnocchixyz/gnocchi has no stable/4.8 branch (4.7.x is the latest
+              # release; master is the 4.8-dev line). Build the 2026.1 image from
+              # master so it resolves while keeping the stable/2026.1 constraints
+              # and its CVE-pinning branch in gnocchi-cve-patching.sh.
+              echo "GNOCCHI_SOURCE_REF=master" >> $GITHUB_ENV
               echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV
               ;;
             *)
@@ -125,7 +137,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            GNOCCHI_VERSION=${{ env.project_version != '' && env.project_version || matrix.gnocchi-version }}
+            GNOCCHI_VERSION=${{ env.GNOCCHI_SOURCE_REF }}
             OS_CONSTRAINTS=${{ env.OS_CONSTRAINTS_REF }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
@@ -182,6 +194,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            GNOCCHI_VERSION=${{ env.project_version != '' && env.project_version || matrix.gnocchi-version }}
+            GNOCCHI_VERSION=${{ env.GNOCCHI_SOURCE_REF }}
             OS_CONSTRAINTS=${{ env.OS_CONSTRAINTS_REF }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}

@@ -6,6 +6,10 @@ ARG OS_VERSION=master
 ARG OS_CONSTRAINTS=master
 ARG NOVA_REPOSITORY=https://opendev.org/openstack/nova.git
 ARG NOVA_FLAVOR_QOS_REPOSITORY=https://github.com/rackerlabs/rxt-nova-flavor-qos.git
+# The flavor-qos plugin is a Rackspace fork maintained on a rolling branch, not
+# an OpenStack stable branch: use stable/2026.1 for Gazpacho and main elsewhere
+# (2025.1/Epoxy has no fork branch; main is the supported line, matching neutron).
+ARG NOVA_FLAVOR_QOS_VERSION=main
 
 FROM ubuntu:noble AS base
 
@@ -14,6 +18,7 @@ ARG OS_VERSION
 ARG OS_CONSTRAINTS
 ARG NOVA_REPOSITORY
 ARG NOVA_FLAVOR_QOS_REPOSITORY
+ARG NOVA_FLAVOR_QOS_VERSION
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -45,7 +50,7 @@ RUN python3 -m venv --system-site-packages /var/lib/openstack \
   && /var/lib/openstack/bin/pip install --upgrade pip \
   && /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                                git+${NOVA_REPOSITORY}@${OS_VERSION}#egg=nova \
-                                               git+${NOVA_FLAVOR_QOS_REPOSITORY}@${OS_VERSION}#egg=rxt-nova-flavor-qos \
+                                               git+${NOVA_FLAVOR_QOS_REPOSITORY}@${NOVA_FLAVOR_QOS_VERSION}#egg=rxt-nova-flavor-qos \
                                                git+https://opendev.org/openstack/blazar-nova.git@${OS_VERSION}#egg=blazar-nova \
                                                PyMySQL \
                                                libvirt-python \

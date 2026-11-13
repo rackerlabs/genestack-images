@@ -81,6 +81,17 @@ jobs:
           echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
           echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
+      - name: Select the ironic-inspector source branch
+        # openstack/ironic-inspector has no stable/2026.1 branch (its 2026.1 line
+        # was never branched). Build from unmaintained/2025.1, which is the latest
+        # inspector line the CVE-patching script supports, so the source ref
+        # resolves and the Epoxy CVE pins still apply.
+        run: |
+          if [ "${{ matrix.openstack-constraints }}" = "stable/2026.1" ]; then
+            echo "INSPECTOR_VERSION=unmaintained/2025.1" >> $GITHUB_ENV
+          else
+            echo "INSPECTOR_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}" >> $GITHUB_ENV
+          fi
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -105,7 +116,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:local
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
+            OS_VERSION=${{ env.INSPECTOR_VERSION }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
       - name: Run Trivy vulnerability scanner
@@ -162,6 +173,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS_VERSION_PARSE }}-${{ env.MY_DATE }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            OS_VERSION=${{ env.project_version != '' && env.project_version || matrix.openstack-constraints }}
+            OS_VERSION=${{ env.INSPECTOR_VERSION }}
             OS_CONSTRAINTS=${{ matrix.openstack-constraints }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
