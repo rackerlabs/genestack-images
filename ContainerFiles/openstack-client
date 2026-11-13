@@ -23,13 +23,13 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN set -eux; \
   if [ -z "${OS_VERSION}" ]; then \
     echo "OS_VERSION build-arg is required and has no default." >&2; \
-    echo "Pass the release being built, e.g. --build-arg OS_VERSION=stable/2025.1" >&2; \
+    echo "Pass the release being built, e.g. --build-arg OS_VERSION=unmaintained/2025.1" >&2; \
     exit 1; \
   fi; \
   case "${OS_VERSION}" in \
-    stable/2025.1|2025.1|epoxy) OS_CONSTRAINTS=stable/2025.1 ;; \
+    unmaintained/2025.1|2025.1|epoxy) OS_CONSTRAINTS=unmaintained/2025.1 ;; \
     stable/2026.1|2026.1|gazpacho|gazapacho) OS_CONSTRAINTS=stable/2026.1 ;; \
-    *) echo "Unsupported OS_VERSION=${OS_VERSION}. Supported releases: stable/2025.1, stable/2026.1" >&2; exit 1 ;; \
+    *) echo "Unsupported OS_VERSION=${OS_VERSION}. Supported releases: unmaintained/2025.1, stable/2026.1" >&2; exit 1 ;; \
   esac; \
   /var/lib/openstack/bin/pip install --constraint https://opendev.org/openstack/requirements/raw/branch/${OS_CONSTRAINTS}/upper-constraints.txt \
                                        pbr \

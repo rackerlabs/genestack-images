@@ -127,7 +127,7 @@ guest-agent behavior.
 #### Zero-fuzz and validation behavior
 
 `scripts/trove-percona-controller-patch.sh` only acts when
-`OS_VERSION=stable/2026.1`; every other branch (including `stable/2025.1` and
+`OS_VERSION=stable/2026.1`; every other branch (including `unmaintained/2025.1` and
 `master`) is skipped explicitly so the change is never silently carried to a
 branch it was not generated against.
 

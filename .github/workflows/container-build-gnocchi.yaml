@@ -92,7 +92,7 @@ jobs:
               echo "OS_CONSTRAINTS_REF=unmaintained/2024.1" >> $GITHUB_ENV
               ;;
             stable/4.7)
-              echo "OS_CONSTRAINTS_REF=stable/2025.1" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=unmaintained/2025.1" >> $GITHUB_ENV
               ;;
             stable/4.8)
               echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV

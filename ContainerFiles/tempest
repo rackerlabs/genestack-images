@@ -7,7 +7,7 @@ FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependenc
 ARG CACHEBUST=0
 
 ARG TEMPEST_BRANCH_TAG=43.0.0
-ARG OS_CONSTRAINTS=stable/2025.1
+ARG OS_CONSTRAINTS=unmaintained/2025.1
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \

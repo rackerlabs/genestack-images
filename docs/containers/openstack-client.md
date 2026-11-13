@@ -5,7 +5,7 @@ The `openstack-client` image is built from [ContainerFiles/openstack-client](htt
 This container packages the openstack-client service for use in the stack. The build installs the required packages, applies security updates and configuration, and prepares the service for integration.
 
 The build installs all client packages against the upper constraints of the
-OpenStack release it targets. Supported `OS_VERSION` values are `stable/2025.1`
+OpenStack release it targets. Supported `OS_VERSION` values are `unmaintained/2025.1`
 for Epoxy and `stable/2026.1` for Gazpacho.
 
 `OS_VERSION` has no default. The release is supplied by the build workflow,

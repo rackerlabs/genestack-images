@@ -3,6 +3,9 @@
 ARG VENV_TAG=3.12-latest
 
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:${VENV_TAG} AS dependency_build
+# Set when an IPA build must pin CVEs to a specific OpenStack release; unset
+# leaves OS_VERSION=master and applies no release-specific pins.
+ARG OS_VERSION=master
 ARG CACHEBUST=0
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \

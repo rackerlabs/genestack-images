@@ -3,7 +3,7 @@
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
 # Stage 1: libguestfs_base
-ARG OS_VERSION=stable/2025.1
+ARG OS_VERSION=unmaintained/2025.1
 ARG BUILT_TAG=v3.5.1-latest
 ARG BUILT_TAG_2=v1.56.1-latest
 FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
@@ -11,16 +11,16 @@ FROM ghcr.io/rackerlabs/genestack-images/ovs:${BUILT_TAG} AS dependency_build
 # Final Stage: dependency_build
 FROM ghcr.io/rackerlabs/genestack-images/libguestfs:${BUILT_TAG_2}
 ARG CACHEBUST=0
-ARG OS_VERSION=stable/2025.1
+ARG OS_VERSION=unmaintained/2025.1
 LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="libvirt"
 LABEL org.opencontainers.image.openstack.version="${OS_VERSION}"
 RUN set -eux; \
   case "${OS_VERSION}" in \
-    stable/2025.1|2025.1|epoxy) OPENSTACK_RELEASE_CODENAME=epoxy ;; \
+    unmaintained/2025.1|2025.1|epoxy) OPENSTACK_RELEASE_CODENAME=epoxy ;; \
     stable/2026.1|2026.1|gazpacho|gazapacho) OPENSTACK_RELEASE_CODENAME=gazpacho ;; \
-    *) echo "Unsupported OS_VERSION=${OS_VERSION}. Supported releases: stable/2025.1, stable/2026.1" >&2; exit 1 ;; \
+    *) echo "Unsupported OS_VERSION=${OS_VERSION}. Supported releases: unmaintained/2025.1, stable/2026.1" >&2; exit 1 ;; \
   esac; \
   mkdir -p /etc/genestack; \
   printf '%s\n' "${OS_VERSION}" > /etc/genestack/openstack-version; \
@@ -39,7 +39,7 @@ COPY --from=dependency_build /lib/x86_64-linux-gnu/libxdp* /lib/x86_64-linux-gnu
 COPY --from=dependency_build /lib/x86_64-linux-gnu/libz* /lib/x86_64-linux-gnu/
 RUN export DEBIAN_FRONTEND=noninteractive \
   && case "${OS_VERSION}" in \
-       stable/2025.1|2025.1|epoxy) \
+       unmaintained/2025.1|2025.1|epoxy) \
          DEBIAN_SUITE=bookworm; \
          MIN_LIBVIRT_VERSION=8.0.0; \
          MIN_QEMU_VERSION=6.2.0 \
