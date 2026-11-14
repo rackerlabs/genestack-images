@@ -55,9 +55,6 @@ jobs:
     strategy:
       matrix:
         ceph-libs-version: ${{ fromJSON(needs.init.outputs.ceph-version) }}
-    outputs:
-      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
-      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
     runs-on: i-hate-ceph
     steps:
       - name: Cleanup disk space

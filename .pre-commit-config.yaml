@@ -51,6 +51,27 @@ repos:
         types: [file]
   - repo: local
     hooks:
+      - id: actionlint
+        name: actionlint
+        language: docker_image
+        # Validate workflow structure and expressions.
+        entry: &actionlint_image rhysd/actionlint:1.7.12 -shellcheck= -pyflakes=
+        files: ^\.github/workflows/[^/]+\.ya?ml$
+        types: [file]
+      - id: actionlint-config
+        name: actionlint configuration
+        language: docker_image
+        entry: *actionlint_image
+        files: ^\.github/actionlint\.ya?ml$
+        pass_filenames: false
+      - id: hadolint
+        name: hadolint
+        language: docker_image
+        # Report existing warnings; block Dockerfile errors.
+        entry: ghcr.io/hadolint/hadolint:v2.15.1 hadolint --failure-threshold error
+        files: ^ContainerFiles/[^/]+$
+        types: [file]
+        verbose: true
       - id: ipa-log-redactor-unit-tests
         name: ipa-log-redactor unit tests
         entry: env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_ipa_log_redactor.py

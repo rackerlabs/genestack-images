@@ -1,0 +1,4 @@
+---
+self-hosted-runner:
+  labels:
+    - i-hate-ceph

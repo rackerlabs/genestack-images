@@ -25,9 +25,6 @@ env:
 
 jobs:
   build-and-push-image:
-    outputs:
-      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
-      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
