@@ -80,6 +80,6 @@ if not patched:
 PY
 }
 
-if [ ${OS_VERSION:-master} = "unmaintained/2025.1" ] || [ ${OS_VERSION:-master} = "stable/2026.1" ]; then
+if [ "${OS_VERSION:-master}" = "unmaintained/2025.1" ] || [ "${OS_VERSION:-master}" = "stable/2026.1" ]; then
     patch_magnum_mysql_charset_declarations
 fi

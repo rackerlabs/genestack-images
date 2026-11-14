@@ -43,6 +43,12 @@ repos:
           - "--unsafe"
       - id: debug-statements
         files: *scope
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: ^scripts/[^/]+\.sh$
+        types: [file]
   - repo: local
     hooks:
       - id: ipa-log-redactor-unit-tests
