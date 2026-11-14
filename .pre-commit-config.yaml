@@ -1,0 +1,93 @@
+---
+# Run suites only for matching code, test, or requirements changes.
+# No matches: skip tests. Shared config changes: run all suites.
+# Local hooks check staged files; CI checks PR changes.
+#
+# Keep formatting scoped and patch files excluded.
+# Use per-hook filters to preserve commit-message checks.
+
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos:
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages:
+          - commit-msg
+        args:
+          - "--strict"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+        files: &scope ^(scripts/ipa-log-redactor/|tests/|ContainerFiles/ipa-log-redactor$|\.github/workflows/container-build-ipa-log-redactor\.yaml$|\.github/workflows/pre-commit\.yaml$|\.pre-commit-config\.yaml$)
+      - id: trailing-whitespace
+        files: *scope
+      - id: mixed-line-ending
+        files: *scope
+      - id: check-byte-order-marker
+        files: *scope
+      - id: check-executables-have-shebangs
+        files: *scope
+      - id: check-merge-conflict
+        files: *scope
+      - id: check-symlinks
+        files: *scope
+      - id: check-yaml
+        files: ^(\.github/workflows/container-build-ipa-log-redactor\.yaml|\.github/workflows/pre-commit\.yaml|\.pre-commit-config\.yaml)$
+        args:
+          - "--allow-multiple-documents"
+          - "--unsafe"
+      - id: debug-statements
+        files: *scope
+  - repo: local
+    hooks:
+      - id: ipa-log-redactor-unit-tests
+        name: ipa-log-redactor unit tests
+        entry: env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_ipa_log_redactor.py
+        language: system
+        pass_filenames: false
+        files: ^(scripts/ipa-log-redactor/.*\.py|tests/test_ipa_log_redactor\.py|\.pre-commit-config\.yaml)$
+      - id: barbican-exporter-unit-tests
+        name: barbican-exporter unit tests
+        entry: python -B -m unittest discover -s tests -p test_barbican_exporter.py
+        language: python
+        pass_filenames: false
+        files: ^(scripts/barbican-exporter-app/(barbican_exporter\.py|requirements\.txt)|tests/test_barbican_exporter\.py|\.pre-commit-config\.yaml)$
+        additional_dependencies:
+          - requests
+          - keystoneauth1
+          - prometheus_client
+      - id: blazar-reservation-splitter-unit-tests
+        name: blazar-reservation-splitter unit tests
+        entry: python -B -m unittest discover -s tests -p test_blazar_reservation_splitter.py
+        language: python
+        pass_filenames: false
+        files: ^(scripts/blazar-reservation-splitter-app/(blazar-reservation-splitter\.py|requirements\.txt)|tests/test_blazar_reservation_splitter\.py|\.pre-commit-config\.yaml)$
+        additional_dependencies:
+          - pika
+          - oslo.config
+      - id: openstack-exporter-unit-tests
+        name: openstack-exporter unit tests
+        entry: python -B -m unittest discover -s tests -p test_openstack_exporter.py
+        language: python
+        pass_filenames: false
+        files: ^(scripts/openstack-exporter-app/(openstack_exporter\.py|requirements\.txt)|tests/test_openstack_exporter\.py|\.pre-commit-config\.yaml)$
+        additional_dependencies:
+          - prometheus_client
+          - requests
+          - keystoneauth1
+          - pyyaml
+          - openstacksdk
+      - id: zaqar-billing-middleware-unit-tests
+        name: zaqar-billing-middleware unit tests
+        entry: python -B -m unittest discover -s tests -p test_zaqar_billing_middleware.py
+        language: python
+        pass_filenames: false
+        files: ^(scripts/zaqar-billing-middleware/.*\.py|tests/test_zaqar_billing_middleware\.py|\.pre-commit-config\.yaml)$
+        additional_dependencies:
+          - oslo.config
+          - oslo.messaging

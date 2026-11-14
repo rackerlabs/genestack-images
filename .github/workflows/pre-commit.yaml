@@ -1,0 +1,30 @@
+---
+name: Run pull-request syntax workflows
+permissions:
+  contents: read
+on:
+  - pull_request
+
+jobs:
+  pre_commit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.12"
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run Check
+        uses: pre-commit/action@v3.0.1
+        with:
+          # Select hooks using the files changed in this pull request.
+          extra_args: >-
+            --from-ref ${{ github.event.pull_request.base.sha }}
+            --to-ref ${{ github.event.pull_request.head.sha }}

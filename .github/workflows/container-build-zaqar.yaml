@@ -14,7 +14,7 @@ on:
     paths:
       - .github/workflows/container-build-zaqar.yaml
       - ContainerFiles/zaqar
-      - scripts/zaqar-billing-middleware.py
+      - scripts/zaqar-billing-middleware/**
       - scripts/zaqar-cve-patching.sh
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC

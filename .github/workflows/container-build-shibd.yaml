@@ -14,7 +14,7 @@ on:
     paths:
       - .github/workflows/container-build-shibd.yaml
       - ContainerFiles/shibd
-      - scripts/shibboleth-sp-3.5.2-memcache-connection-retry.patch
+      - patches/shibboleth/shibboleth-sp-3.5.2-memcache-connection-retry.patch
   schedule:
     - cron: '0 0 * * 0'  # Run Weekly at midnight UTC
   workflow_dispatch:
