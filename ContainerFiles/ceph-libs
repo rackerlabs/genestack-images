@@ -66,7 +66,8 @@ RUN . /var/lib/openstack/bin/activate \
 
 
 WORKDIR /opt/ceph/build
-RUN ninja -j $(nproc) rbd rados rbd_python3 rados_python3
+# Ceph names its Python binding targets cython_rbd and cython_rados.
+RUN ninja -j $(nproc) rbd rados cython_rbd cython_rados
 RUN ninja install
 
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:3.12-latest
