@@ -39,7 +39,7 @@ jobs:
 
     steps:
     - name: Dynamically set MY_DATE environment variable
-      run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+      run: echo "MY_DATE=$(date +%s)" >> "$GITHUB_ENV"
 
     - name: Checkout code
       uses: actions/checkout@v4

@@ -54,8 +54,8 @@ repos:
       - id: actionlint
         name: actionlint
         language: docker_image
-        # Validate workflow structure and expressions.
-        entry: &actionlint_image rhysd/actionlint:1.7.12 -shellcheck= -pyflakes=
+        # Validate workflows and embedded shell commands.
+        entry: &actionlint_image rhysd/actionlint:1.7.12 -pyflakes=
         files: ^\.github/workflows/[^/]+\.ya?ml$
         types: [file]
       - id: actionlint-config
