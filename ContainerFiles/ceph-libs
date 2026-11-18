@@ -66,7 +66,7 @@ RUN . /var/lib/openstack/bin/activate \
 
 
 WORKDIR /opt/ceph/build
-RUN ninja -j $(nproc) rbd rados rbd_python3 rados_python3
+RUN ninja -j $(nproc) rbd rados
 RUN ninja install
 
 FROM ghcr.io/rackerlabs/genestack-images/openstack-venv:3.12-latest
@@ -74,6 +74,7 @@ LABEL maintainer="Rackspace"
 LABEL vendor="Rackspace OpenStack Team"
 LABEL org.opencontainers.image.name="ceph-libs"
 LABEL org.opencontainers.image.description="Ceph client libraries built for the enterprise."
+COPY --from=dependency_build /usr/local/bin/rbd /usr/local/bin/rados /usr/local/bin/
 COPY --from=dependency_build /usr/local/lib /usr/local/lib
 COPY --from=dependency_build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
@@ -81,6 +82,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get upgrade -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y \
+  && ldconfig \
   && rm -rf /var/lib/apt/lists/* \
   && find / -name '*.pyc' -delete \
   && find / -name '*.pyo' -delete \
