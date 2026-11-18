@@ -94,13 +94,13 @@ jobs:
             # Temporary fork carrying the binding:vif_type=virtual patch for the
             # 2026.1 upgrade hop. Uses the upstream stable/2026.1 branch name so
             # pbr/upper-constraints resolve correctly. Retire at 2026.2.
-            echo "RXT_VERSION=stable/2026.1" >> $GITHUB_ENV
-            echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/rxt-neutron.git" >> $GITHUB_ENV
+            echo "RXT_VERSION=stable/2026.1" >> "$GITHUB_ENV"
+            echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/rxt-neutron.git" >> "$GITHUB_ENV"
           elif [ "${{ env.OS_VERSION_PARSE }}" = "2026.2" ]; then
             # Patch dropped at 2026.2: build Neutron from upstream directly
             # (no fork, no patch - upstream fix c65c18a6d2 is included).
-            echo "RXT_VERSION=stable/2026.2" >> $GITHUB_ENV
-            echo "RXT_NEUTRON_REPO=https://opendev.org/openstack/neutron.git" >> $GITHUB_ENV
+            echo "RXT_VERSION=stable/2026.2" >> "$GITHUB_ENV"
+            echo "RXT_NEUTRON_REPO=https://opendev.org/openstack/neutron.git" >> "$GITHUB_ENV"
           else
             echo "RXT_VERSION=rxt" >> "$GITHUB_ENV"
             echo "RXT_NEUTRON_REPO=https://github.com/rackerlabs/neutron.git" >> "$GITHUB_ENV"
