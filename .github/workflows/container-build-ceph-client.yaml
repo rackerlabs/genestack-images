@@ -73,6 +73,11 @@ jobs:
           sudo rm -rf "/usr/local/share/boost" || true
           sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
           echo "After Cleanup"; df -h
+      - name: Prune Docker data from previous runs
+        run: |
+          docker system prune --all --force --volumes || true
+          docker builder prune --all --force || true
+          df -h
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Set up QEMU
@@ -165,3 +170,9 @@ jobs:
           build-args: |
             CEPH_VERSION=${{ matrix.ceph-libs-version }}
             CACHEBUST=${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Prune Docker data
+        if: always()
+        run: |
+          docker system prune --all --force --volumes || true
+          docker builder prune --all --force || true
+          df -h
