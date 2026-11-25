@@ -57,7 +57,7 @@ jobs:
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             gnocchi_versions="$(echo '${{ github.event.inputs.gnocchi-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
           fi
-          echo "gnocchi_versions=${gnocchi_versions:-${{ env.gnocchi_versions }}}" >> $GITHUB_OUTPUT
+          echo "gnocchi_versions=${gnocchi_versions:-${{ env.gnocchi_versions }}}" >> "$GITHUB_OUTPUT"
   build-and-push-image:
     needs:
       - init
@@ -73,44 +73,44 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Dynamically set MY_DATE environment variable
-        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+        run: echo "MY_DATE=$(date +%s)" >> "$GITHUB_ENV"
       - name: Normalize image repository name
-        run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
       - name: Dynamically set OS_VERSION_PARSE environment variable
         run: |
           VERSION=$(echo -n "${{ env.project_version != '' && env.project_version || matrix.gnocchi-version }}" | awk -F'/' '{($2=="" ? x=$1 : x=$2); print x}')
-          echo "OS_VERSION_PARSE=${VERSION}" >> $GITHUB_ENV
+          echo "OS_VERSION_PARSE=${VERSION}" >> "$GITHUB_ENV"
           NAME=$(echo -n "${{ env.IMAGE_NAME }}" | awk -F'/' '{print $NF}')
-          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> $GITHUB_ENV
+          echo "CATEGORY_NAME=${VERSION}-${NAME}" >> "$GITHUB_ENV"
       - name: Map Gnocchi branch to OpenStack constraints
         run: |
           # Default the source branch to the matrix leg (or the manual
           # project-version override); stable/4.8 overrides to master below.
           if [ -n "${{ env.project_version }}" ]; then
-            echo "GNOCCHI_SOURCE_REF=${{ env.project_version }}" >> $GITHUB_ENV
+            echo "GNOCCHI_SOURCE_REF=${{ env.project_version }}" >> "$GITHUB_ENV"
           else
-            echo "GNOCCHI_SOURCE_REF=${{ matrix.gnocchi-version }}" >> $GITHUB_ENV
+            echo "GNOCCHI_SOURCE_REF=${{ matrix.gnocchi-version }}" >> "$GITHUB_ENV"
           fi
           case "${{ matrix.gnocchi-version }}" in
             master)
-              echo "OS_CONSTRAINTS_REF=master" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=master" >> "$GITHUB_ENV"
               ;;
             stable/4.6)
-              echo "OS_CONSTRAINTS_REF=unmaintained/2024.1" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=unmaintained/2024.1" >> "$GITHUB_ENV"
               ;;
             stable/4.7)
-              echo "OS_CONSTRAINTS_REF=unmaintained/2025.1" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=unmaintained/2025.1" >> "$GITHUB_ENV"
               ;;
             stable/4.8)
               # gnocchixyz/gnocchi has no stable/4.8 branch (4.7.x is the latest
               # release; master is the 4.8-dev line). Build the 2026.1 image from
               # master so it resolves while keeping the stable/2026.1 constraints
               # and its CVE-pinning branch in gnocchi-cve-patching.sh.
-              echo "GNOCCHI_SOURCE_REF=master" >> $GITHUB_ENV
-              echo "OS_CONSTRAINTS_REF=stable/2026.1" >> $GITHUB_ENV
+              echo "GNOCCHI_SOURCE_REF=master" >> "$GITHUB_ENV"
+              echo "OS_CONSTRAINTS_REF=stable/2026.1" >> "$GITHUB_ENV"
               ;;
             *)
-              echo "OS_CONSTRAINTS_REF=master" >> $GITHUB_ENV
+              echo "OS_CONSTRAINTS_REF=master" >> "$GITHUB_ENV"
               ;;
           esac
       - name: Log in to the Container registry
@@ -168,10 +168,12 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           if [[ -s trivy.txt ]]; then
-              echo "### Security Output" > trivy-output.txt
-              echo '```terraform' >> trivy-output.txt
-              cat trivy.txt >> trivy-output.txt
-              echo '```' >> trivy-output.txt
+              {
+                echo "### Security Output"
+                echo '```terraform'
+                cat trivy.txt
+                echo '```'
+              } > trivy-output.txt
           fi
       - name: Publish Trivy Output to Summary
         if: ${{ github.event_name == 'pull_request' }}
@@ -179,7 +181,7 @@ jobs:
           if [[ -s trivy-output.txt ]]; then
             {
               cat trivy-output.txt
-            } >> $GITHUB_STEP_SUMMARY
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Build and push Docker image
         uses: docker/build-push-action@v6

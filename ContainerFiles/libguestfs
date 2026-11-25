@@ -53,7 +53,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 libxslt1.1 \
                                                 libyara-dev \
                                                 libyara-dev \
-                                                opam \
+                                                ocaml-findlib \
+                                                ocaml-nox \
                                                 pkg-config \
                                                 qemu-block-extra \
                                                 qemu-block-extra \
@@ -67,10 +68,15 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 xmlsec1 \
                                                 xorriso \
                                                 zstd
-RUN opam init --yes --disable-sandboxing
-RUN opam install --update-invariant --yes oasis augeas ocamlfind
-ENV PATH=/root/.opam/default/bin:$PATH
-ENV OCAMLPATH=/root/.opam/default/lib/ocaml:/usr/lib/ocaml
+# The opam augeas package is archived; build the maintained bindings directly.
+ADD --checksum=sha256:ee3899c85d5b22cdcc659183e571add0980725a8a705a9fe7bf53ddc2ba2dd63 \
+    https://download.libguestfs.org/ocaml-augeas/ocaml-augeas-0.7.tar.gz /tmp/ocaml-augeas.tar.gz
+WORKDIR /opt/ocaml-augeas
+RUN tar --extract --gzip --file /tmp/ocaml-augeas.tar.gz --strip-components=1 \
+  && ./configure \
+  && make \
+  && make install \
+  && rm /tmp/ocaml-augeas.tar.gz
 ENV PYTHON=/var/lib/openstack/bin/python3
 
 RUN git clone --branch ${GUESTFS_HIVEX_VERSION} https://github.com/libguestfs/hivex /opt/hivex
@@ -137,6 +143,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
                                                 ldmtool \
                                                 less \
                                                 libacl1 \
+                                                libconfig9 \
+                                                libvirt0 \
                                                 libxml2 \
                                                 lsscsi \
                                                 lvm2 \
@@ -168,4 +176,5 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && find / -name '__pycache__' -delete
 COPY --from=dependency_build /usr/local /usr/local
 COPY --from=dependency_build /var/lib/openstack /var/lib/openstack
+RUN ldconfig
 ENV PATH="/usr/local/bin:/usr/local/sbin:$PATH"

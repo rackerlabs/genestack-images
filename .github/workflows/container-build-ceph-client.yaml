@@ -48,16 +48,13 @@ jobs:
           if [ "${{ github.event_name == 'workflow_dispatch' }}" = "true" ]; then
             ceph_version="$(echo '${{ github.event.inputs.ceph-version }}' | jq -R '[select(length>0)]' | jq -c '.')"
           fi
-          echo "ceph_version=${ceph_version:-${{ env.ceph_version }}}" >> $GITHUB_OUTPUT
+          echo "ceph_version=${ceph_version:-${{ env.ceph_version }}}" >> "$GITHUB_OUTPUT"
   build-and-push-image:
     needs:
       - init
     strategy:
       matrix:
         ceph-libs-version: ${{ fromJSON(needs.init.outputs.ceph-version) }}
-    outputs:
-      MY_DATE: ${{ steps.mydate.outputs.MY_DATE }}
-      MY_CONTAINER: ${{ steps.mycontainer.outputs.MY_CONTAINER }}
     runs-on: i-hate-ceph
     steps:
       - name: Cleanup disk space
@@ -91,9 +88,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Dynamically set MY_DATE environment variable
-        run: echo "MY_DATE=$(date +%s)" >> $GITHUB_ENV
+        run: echo "MY_DATE=$(date +%s)" >> "$GITHUB_ENV"
       - name: Normalize image repository name
-        run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "IMAGE_NAME=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -137,10 +134,12 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           if [[ -s trivy.txt ]]; then
-              echo "### Security Output" > trivy-output.txt
-              echo '```terraform' >> trivy-output.txt
-              cat trivy.txt >> trivy-output.txt
-              echo '```' >> trivy-output.txt
+              {
+                echo "### Security Output"
+                echo '```terraform'
+                cat trivy.txt
+                echo '```'
+              } > trivy-output.txt
           fi
       - name: Publish Trivy Output to Summary
         if: ${{ github.event_name == 'pull_request' }}
@@ -148,7 +147,7 @@ jobs:
           if [[ -s trivy-output.txt ]]; then
             {
               cat trivy-output.txt
-            } >> $GITHUB_STEP_SUMMARY
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Build and push Docker image
         uses: docker/build-push-action@v6

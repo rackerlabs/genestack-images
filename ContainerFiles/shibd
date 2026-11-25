@@ -52,7 +52,7 @@ RUN curl -fsSLO "https://deb.debian.org/debian/pool/main/s/shibboleth-sp/shibbol
      | sha256sum --check --strict \
   && dpkg-source --extract "shibboleth-sp_${SHIBBOLETH_SP_SOURCE_VERSION}.dsc"
 
-COPY scripts/shibboleth-sp-3.5.2-memcache-connection-retry.patch /tmp/
+COPY patches/shibboleth/shibboleth-sp-3.5.2-memcache-connection-retry.patch /tmp/
 WORKDIR /build/shibboleth-sp-${SHIBBOLETH_SP_UPSTREAM_VERSION}
 RUN patch --batch --forward --fuzz=0 -p1 < /tmp/shibboleth-sp-3.5.2-memcache-connection-retry.patch \
   && grep -Fq 'retryDelays[] = { 100, 250, 500 }' memcache-store/memcache-store.cpp \
